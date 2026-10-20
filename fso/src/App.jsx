@@ -1,4 +1,631 @@
 /*
+Refactoring the components
+The component displaying the value of the counter is as follows:
+
+const Display = (props) => {
+  return (
+    <div>{props.counter}</div>
+  )
+}
+The component only uses the counter field of its props. This means we can simplify the component by using destructuring, like so:
+
+const Display = ({ counter }) => {
+  return (
+    <div>{counter}</div>
+  )
+}
+The function defining the component contains only the return statement, so we can define the function using the more compact form of arrow functions:
+
+const Display = ({ counter }) => <div>{counter}</div>
+We can simplify the Button component as well.
+
+const Button = (props) => {
+  return (
+    <button onClick={props.onClick}>
+      {props.text}
+    </button>
+  )
+}
+We can use destructuring to get only the required fields from props, and use the more compact form of arrow functions:
+
+const Button = ({ onClick, text }) => <button onClick={onClick}>{text}</button>
+This approach works because the component contains only a single return statement, making it possible to use the concise arrow function syntax.
+*/
+/**/
+import {useState} from "react"
+
+const Display = ({ counter }) => <div>{counter}</div>
+
+const Button = ({ onClick, text }) => <button onClick={onClick}>{text}</button>
+
+const App = () => {
+  const [counter, setCounter] = useState(0)
+  console.log('rendering with counter value', counter)
+
+  const increaseByOne = () => {
+    console.log('increasing, value before', counter)
+    setCounter(counter + 1)
+  }
+
+  const decreaseByOne = () => { 
+    console.log('decreasing, value before', counter)
+    setCounter(counter - 1)
+  }
+
+  const setToZero = () => {
+    console.log('resetting to zero, value before', counter)
+    setCounter(0)
+  }
+
+  return (
+    <div>
+      <Display counter={counter} />
+      <Button onClick={increaseByOne} text="plus" />
+      <Button onClick={setToZero} text="zero" />
+      <Button onClick={decreaseByOne} text="minus" />
+    </div>
+  )
+} 
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Changes in state cause re-rendering
+Let's go over the main principles of how an application works once more.
+
+When the application starts, the code in App is executed. This code uses a useState hook to create the application state, setting an initial value of the variable counter. This component contains the Display component - which displays the counter's value, 0 - and three Button components. The buttons all have event handlers, which are used to change the state of the counter.
+
+When one of the buttons is clicked, the event handler is executed. The event handler changes the state of the App component with the setCounter function. Calling a function that changes the state causes the component to re-render.
+
+So, if a user clicks the plus button, the button's event handler changes the value of counter to 1, and the App component is re-rendered. This causes its subcomponents Display and Button to also be re-rendered. Display receives the new value of the counter, 1, as props. The Button components receive event handlers which can be used to change the state of the counter.
+
+To be sure to understand how the program works, let us add some console.log statements to it
+
+const App = () => {
+  const [counter, setCounter] = useState(0)
+  console.log('rendering with counter value', counter)
+
+  const increaseByOne = () => {
+    console.log('increasing, value before', counter)
+    setCounter(counter + 1)
+  }
+
+  const decreaseByOne = () => { 
+    console.log('decreasing, value before', counter)
+    setCounter(counter - 1)
+  }
+
+  const setToZero = () => {
+    console.log('resetting to zero, value before', counter)
+    setCounter(0)
+  }
+
+  return (
+    <div>
+      <Display counter={counter} />
+      <Button onClick={increaseByOne} text="plus" />
+      <Button onClick={setToZero} text="zero" />
+      <Button onClick={decreaseByOne} text="minus" />
+    </div>
+  )
+}
+Let us now see what gets rendered to the console when the buttons plus, zero and minus are pressed:
+
+browser showing console with rendering values highlighted
+Do not ever try to guess what your code does. It is just better to use console.log and see with your own eyes what it does.
+*/
+/*
+import { useState } from "react"
+
+const Display = (props) => {
+  return (
+    <div>{props.counter}</div>
+  )
+}
+
+const Button = (props) => {
+  return (
+    <button onClick={props.onClick}>
+      {props.text}
+    </button>
+  )
+}
+
+const App = () => {
+  const [counter, setCounter] = useState(0)
+
+  console.log('rendering with counter value', counter)
+
+  const increaseByOne = () => {
+
+    console.log('increasing, value before', counter)
+    setCounter(counter + 1)
+  }
+
+  const decreaseByOne = () => { 
+
+    console.log('decreasing, value before', counter)
+    setCounter(counter - 1)
+  }
+
+  const setToZero = () => {
+
+    console.log('resetting to zero, value before', counter)
+    setCounter(0)
+  }
+
+  return (
+    <div>
+      <Display counter={counter} />
+      <Button onClick={increaseByOne} text="plus" />
+      <Button onClick={setToZero} text="zero" />
+      <Button onClick={decreaseByOne} text="minus" />
+    </div>
+  )
+} 
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Passing state - to child components
+It's recommended to write React components that are small and reusable across the application and even across projects. Let's refactor our application so that it's composed of three smaller components, one component for displaying the counter and two components for buttons.
+
+Let's first implement a Display component that's responsible for displaying the value of the counter.
+
+One best practice in React is to lift the state up in the component hierarchy. The documentation says:
+
+Often, several components need to reflect the same changing data. We recommend lifting the shared state up to their closest common ancestor.
+
+So let's place the application's state in the App component and pass it down to the Display component through props:
+
+const Display = (props) => {
+  return (
+    <div>{props.counter}</div>
+  )
+}
+Using the component is straightforward, as we only need to pass the state of the counter to it:
+
+const App = () => {
+  const [ counter, setCounter ] = useState(0)
+
+  const increaseByOne = () => setCounter(counter + 1)
+  const setToZero = () => setCounter(0)
+
+  return (
+    <div>
+      <Display counter={counter}/>
+      <button onClick={increaseByOne}>
+        plus
+      </button>
+      <button onClick={setToZero}> 
+        zero
+      </button>
+    </div>
+  )
+}
+Everything still works. When the buttons are clicked and the App gets re-rendered, all of its children including the Display component are also re-rendered.
+
+Next, let's make a Button component for the buttons of our application. We have to pass the event handler as well as the title of the button through the component's props:
+
+const Button = (props) => {
+  return (
+    <button onClick={props.onClick}>
+      {props.text}
+    </button>
+  )
+}
+Our App component now looks like this:
+
+const App = () => {
+  const [ counter, setCounter ] = useState(0)
+
+  const increaseByOne = () => setCounter(counter + 1)
+  const decreaseByOne = () => setCounter(counter - 1)
+  const setToZero = () => setCounter(0)
+
+  return (
+    <div>
+      <Display counter={counter}/>
+      <Button
+        onClick={increaseByOne}
+        text='plus'
+      />
+      <Button
+        onClick={setToZero}
+        text='zero'
+      />     
+      <Button
+        onClick={decreaseByOne}
+        text='minus'
+      />           
+    </div>
+  )
+}
+Since we now have an easily reusable Button component, we've also implemented new functionality into our application by adding a button that can be used to decrement the counter.
+
+The event handler is passed to the Button component through the onClick prop. When creating your own components, you can theoretically choose the prop name freely. However, our naming choice for the event handler was not entirely arbitrary.
+
+React's own official tutorial suggests: "In React, it’s conventional to use onSomething names for props which take functions which handle events and handleSomething for the actual function definitions which handle those events."
+*/
+/*
+import { useState } from "react"
+
+const Display = (props) => {
+  return (
+    <div>{props.counter}</div>
+  )
+}
+
+const Button = (props) => {
+  return (
+    <button onClick={props.onClick}>
+      {props.text}
+    </button>
+  )
+}
+
+const App = () => {
+  const [ counter, setCounter ] = useState(0)
+
+  const increaseByOne = () => setCounter(counter + 1)
+  const decreaseByOne = () => setCounter(counter - 1)
+  const setToZero = () => setCounter(0)
+
+  return (
+    <div>
+
+      <Display counter={counter}/>
+      <Button
+        onClick={increaseByOne}
+        text='plus'
+      />
+      <Button
+        onClick={setToZero}
+        text='zero'
+      />     
+      <Button
+        onClick={decreaseByOne}
+        text='minus'
+      /> 
+    </div>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+An event handler is a function
+We define the event handlers for our buttons where we declare their onClick attributes:
+
+<button onClick={() => setCounter(counter + 1)}> 
+  plus
+</button>
+What if we tried to define the event handlers in a simpler form?
+
+<button onClick={setCounter(counter + 1)}> 
+  plus
+</button>
+This would completely break our application:
+
+screenshot of re-renders error
+What's going on? An event handler is supposed to be either a function or a function reference, and when we write:
+
+<button onClick={setCounter(counter + 1)}>
+the event handler is actually a function call. In many situations this is ok, but not in this particular situation. In the beginning, the value of the counter variable is 0. When React renders the component for the first time, it executes the function call setCounter(0+1), and changes the value of the component's state to 1. This will cause the component to be re-rendered, React will execute the setCounter function call again, and the state will change leading to another re-render...
+
+Let's define the event handlers like we did before:
+
+<button onClick={() => setCounter(counter + 1)}> 
+  plus
+</button>
+Now the button's attribute which defines what happens when the button is clicked - onClick - has the value () => setCounter(counter + 1). The setCounter function is called only when a user clicks the button.
+
+Usually defining event handlers within JSX-templates is not a good idea. Here it's ok, because our event handlers are so simple.
+
+Let's separate the event handlers into separate functions anyway:
+
+const App = () => {
+  const [ counter, setCounter ] = useState(0)
+
+  const increaseByOne = () => setCounter(counter + 1)
+  
+  const setToZero = () => setCounter(0)
+
+  return (
+    <div>
+      <div>{counter}</div>
+      <button onClick={increaseByOne}>
+        plus
+      </button>
+      <button onClick={setToZero}>
+        zero
+      </button>
+    </div>
+  )
+}
+Here, the event handlers have been defined correctly. The value of the onClick attribute is a variable containing a reference to a function:
+
+<button onClick={increaseByOne}> 
+  plus
+</button>
+*/
+/*
+import {useState} from 'react'
+
+const App = () => {
+  const [ counter, setCounter ] = useState(0)
+
+
+  const increaseByOne = () => setCounter(counter + 1)
+  
+  const setToZero = () => setCounter(0)
+
+  return (
+    <div>
+      <div>{counter}</div>
+
+      <button onClick={increaseByOne}>
+        Sumer geiiiison
+      </button>
+
+      <button onClick={setToZero}>
+        zero gei
+      </button>
+    </div>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Event handling
+We have already mentioned the event handlers that are registered to be called when specific events occur a few times in part 0. A user's interaction with the different elements of a web page can cause a collection of various kinds of events to be triggered.
+
+Let's change the application so that increasing the counter happens when a user clicks a button, which is implemented with the button element.
+
+Button elements support so-called mouse events, of which click is the most common event. The click event on a button can also be triggered with the keyboard or a touch screen despite the name mouse event.
+
+In React, registering an event handler function to the click event happens like this:
+
+const App = () => {
+  const [ counter, setCounter ] = useState(0)
+
+  const handleClick = () => {
+    console.log('clicked')
+  }
+
+  return (
+    <div>
+      <div>{counter}</div>
+      <button onClick={handleClick}>
+        plus
+      </button>
+    </div>
+  )
+}
+We set the value of the button's onClick attribute to be a reference to the handleClick function defined in the code.
+
+Now every click of the plus button causes the handleClick function to be called, meaning that every click event will log a clicked message to the browser console.
+
+The event handler function can also be defined directly in the value assignment of the onClick-attribute:
+
+const App = () => {
+  const [ counter, setCounter ] = useState(0)
+
+  return (
+    <div>
+      <div>{counter}</div>
+      <button onClick={() => console.log('clicked')}>
+        plus
+      </button>
+    </div>
+  )
+}
+By changing the event handler to the following form
+
+<button onClick={() => setCounter(counter + 1)}>
+  plus
+</button>
+we achieve the desired behavior, meaning that the value of counter is increased by one and the component gets re-rendered.
+
+Let's also add a button for resetting the counter:
+
+const App = () => {
+  const [ counter, setCounter ] = useState(0)
+
+  return (
+    <div>
+      <div>{counter}</div>
+      <button onClick={() => setCounter(counter + 1)}>
+        plus
+      </button>
+      <button onClick={() => setCounter(0)}> 
+        zero
+      </button>
+    </div>
+  )
+}
+Our application is now ready!
+*/
+/*
+import {useState} from 'react'
+
+const App = () => {
+  const [ counter, setCounter ] = useState(0)
+
+  return (
+    <div>
+      <div>{counter}</div>
+      <button onClick={() => setCounter(prev=>prev + 1)}>
+        plus
+      </button>
+
+      <button onClick={() => setCounter(0)}> 
+        zero
+      </button>
+    </div>
+  )
+}
+export default App
+/**/
+/*
+//RANDOM COLOR-SIZE-ROTATION COUNTER
+import { useState } from 'react'
+let bandera = 0
+const App = () => {
+
+  const [counter, setCounter] = useState(0)
+  
+
+  setTimeout(
+    ()=>{
+      if(counter>250){ bandera=1 }
+      if(counter<0){ bandera=0 }
+      if(bandera===0){ setCounter(prev=>prev+1) }
+      if(bandera===1){ setCounter(prev=>prev-1) }
+      
+    },
+    20
+  )
+  console.log('rendering...', counter)
+
+  return (
+    <p style={{
+        fontSize: `${counter}px`,
+        color: `rgb(
+          ${counter % 256},
+          ${(counter * 2) % 256},
+          ${(counter * 3) % 256})`,
+        rotate: `${counter*-0.9}deg`,
+      }}
+    >
+    {counter}</p>
+  )
+}
+
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 Stateful component
 All of our components up till now have been simple in the sense that they have not contained any state that could change during the lifecycle of the component.
 
@@ -90,7 +717,7 @@ It's easy to follow and track the calls made to the App component's render funct
 screenshot of rendering log on dev tools
 Was your browser console open? If it wasn't, then promise that this was the last time you need to be reminded about it.
 */
-/**/
+/*
 import { useState } from 'react'
 
 const App = () => {
@@ -103,7 +730,7 @@ const App = () => {
       console.log("SetCounter")
       setCounter(counter + 1)
     },
-    1000
+    3000
   )
 
   console.log('rendering...', counter)
