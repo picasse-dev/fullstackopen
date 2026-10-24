@@ -1,4 +1,97 @@
 /*
+2.5: Separate module step 10
+Declare the Course component as a separate module, which is imported by the App component. You can include all subcomponents of the course in the same module.
+*/
+/**/
+import Title from './components/Title'
+import Courses from './components/Courses'
+
+
+const App = () => {
+  (console.clear(), console.log("app working"))
+  const courses = [
+    {
+      name: 'Half Stack application development',
+      id: 1,
+      parts: [
+        {
+          name: 'Fundamentals of React',
+          exercises: 10,
+          id: 1
+        },
+        {
+          name: 'Using props to pass data',
+          exercises: 7,
+          id: 2
+        },
+        {
+          name: 'State of a component',
+          exercises: 14,
+          id: 3
+        },
+        {
+          name: 'Redux',
+          exercises: 11,
+          id: 4
+        }
+      ]
+    }, 
+    {
+      name: 'Node.js',
+      id: 2,
+      parts: [
+        {
+          name: 'Routing',
+          exercises: 3,
+          id: 1
+        },
+        {
+          name: 'Middlewares',
+          exercises: 7,
+          id: 2
+        }
+      ]
+    }
+  ]
+
+  return(
+    <>
+      <Title title={"Web development curriculum"}></Title>
+      <Courses courses={courses} />
+    </>
+  ) 
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 2.4: Course information step 9
 Let's extend our application to allow for an arbitrary number of courses:
 
@@ -56,7 +149,7 @@ const App = () => {
 }copy
 The application can, for example, look like this:
 */
-/** */
+/*
 const Title = ({ title }) => <h1>{title}</h1>
 const Header = ({ title }) => <h3>{title}</h3>
 const Part = ({ part }) => <p>{part.name} {part.exercises}</p>
@@ -127,7 +220,6 @@ const App = () => {
 }
 export default App
 /**/
-
 //Curses in compact style, implicit return wtf with the (), still working
 /*
 const Courses = ({ courses }) => courses.map((course) => (
