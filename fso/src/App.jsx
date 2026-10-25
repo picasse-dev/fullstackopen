@@ -1,6 +1,764 @@
 /**/
 /**/
 /**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Exercises 2.6.-2.10.
+*/
+/**/
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Filtering Displayed Elements
+Let's add some new functionality to our application that allows us to only view the important notes.
+
+Let's add a piece of state to the App component that keeps track of which notes should be displayed:
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes) 
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+  
+  // ...
+}copy
+Let's change the component so that it stores a list of all the notes to be displayed in the notesToShow variable. The items on the list depend on the state of the component:
+
+import { useState } from 'react'
+import Note from './components/Note'
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes)
+  const [newNote, setNewNote] = useState('') 
+  const [showAll, setShowAll] = useState(true)
+
+  // ...
+
+  const notesToShow = showAll
+    ? notes
+    : notes.filter(note => note.important === true)
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <ul>
+        {notesToShow.map(note =>
+          <Note key={note.id} note={note} />
+        )}
+      </ul>
+      // ...
+    </div>
+  )
+}copy
+The definition of the notesToShow variable is rather compact:
+
+const notesToShow = showAll
+  ? notes
+  : notes.filter(note => note.important === true)copy
+The definition uses the conditional operator also found in many other programming languages.
+
+The operator functions as follows. If we have:
+
+const result = condition ? val1 : val2copy
+the result variable will be set to the value of val1 if condition is true. If condition is false, the result variable will be set to the value ofval2.
+
+If the value of showAll is false, the notesToShow variable will be assigned to a list that only contains notes that have the important property set to true. Filtering is done with the help of the array filter method:
+
+notes.filter(note => note.important === true)copy
+The comparison operator is redundant, since the value of note.important is either true or false, which means that we can simply write:
+
+notes.filter(note => note.important)copy
+We showed the comparison operator first to emphasize an important detail: in JavaScript val1 == val2 does not always work as expected. When performing comparisons, it's therefore safer to exclusively use val1 === val2. You can read more about the topic here.
+
+You can test out the filtering functionality by changing the initial value of the showAll state.
+
+Next, let's add functionality that enables users to toggle the showAll state of the application from the user interface.
+
+The relevant changes are shown below:
+
+import { useState } from 'react' 
+import Note from './components/Note'
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes) 
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  // ...
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map(note =>
+          <Note key={note.id} note={note} />
+        )}
+      </ul>
+      // ...    
+    </div>
+  )
+}copy
+The displayed notes (all versus important) are controlled with a button. The event handler for the button is so simple that it has been defined directly in the attribute of the button element. The event handler switches the value of showAll from true to false and vice versa:
+
+() => setShowAll(!showAll)copy
+The text of the button depends on the value of the showAll state:
+
+show {showAll ? 'important' : 'all'}copy
+You can find the code for our current application in its entirety in the part2-3 branch of this GitHub repository.
+*/
+/**/
+import { useState } from 'react'
+import Note from './components/Note'
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes)
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  const addNote = (event) => {
+    event.preventDefault()
+
+    if(newNote === ''){return}
+    else{
+      const noteObject = {content: newNote,important: Math.random() < 0.5,id: String(notes.length + 1),}
+      setNotes(notes.concat(noteObject))
+      setNewNote('')
+    }
+  }
+
+  const handleNoteChange = (event) => {
+    setNewNote(event.target.value)
+  }
+
+  const notesToShow = showAll
+    ? notes
+    : notes.filter(el => el.important === true)
+
+  return(
+    <div>
+      <h1>Notes</h1>
+      <button onClick={() => setShowAll((prev) => !prev) }>show {showAll ? 'important' : 'all'}</button>
+      <ul>
+        {notesToShow.map((el)=>
+          <Note key={el.id} note={el}></Note>
+        )}
+      </ul>
+
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} placeholder='a new note...'/>
+        <button type="submit">save</button>
+      </form>   
+
+    </div>
+  )
+}
+
+export default App
+
+/**/
+/*
+//F*CKKK
+En JavaScript, la diferencia entre == y ===, es que == compara los valores permitiendo conversiones de tipo, mientras que === compara el valor y el tipo de dato sin convertirlos.
+
+1. Operador == (igualdad débil)
+JavaScript intenta convertir los tipos de datos para poder compararlos.
+console.log(5 == "5");       // true
+console.log(1 == true);      // true
+console.log(0 == false);     // true
+console.log(null == undefined); // true
+
+
+¿Por qué? Porque JavaScript convierte los valores cuando considera que son equivalentes.
+
+Por ejemplo:
+5 == "5"
+
+El número 5 es de tipo number y "5" es de tipo string. Sin embargo, == convierte uno de los valores y devuelve true.
+
+2. Operador === (igualdad estricta)
+Compara el valor y el tipo de dato. No realiza conversiones de tipo para hacer que coincidan.
+console.log(5 === "5");      // false
+console.log(1 === true);     // false
+console.log(0 === false);    // false
+console.log(5 === 5);        // true
+console.log("hola" === "hola"); // true
+
+//F*CKKK 2
+Sí. React puede volver a renderizar un componente cuando actualizas un estado con setEstado, aunque la variable no se muestre en pantalla ni se utilice en la lógica. Hay un detalle importante: depende de si el nuevo valor es diferente del anterior.
+
+Vamos con ejemplos, porque esto es fundamental para entender React en tu bootcamp de Full Stack Open.
+1. Un estado que no se utiliza
+import { useState } from "react";
+
+function App() {
+  const [contador, setContador] = useState(0);
+
+  return (
+    <button onClick={() => setContador(contador + 1)}>
+      Haz clic
+    </button>
+  );
+}
+
+
+Aquí contador nunca se muestra en el JSX ni se usa en otra lógica.
+
+¿Qué ocurre cuando haces clic?
+1. setContador solicita actualizar el estado.
+2. El valor pasa de 0 a 1.
+3. React vuelve a ejecutar la función App.
+4. React comprueba el resultado del nuevo renderizado y actualiza el DOM solo si es necesario.
+Sí, hay un nuevo renderizado, aunque visualmente el botón no cambie.
+2. ¿Y si actualizo el estado con el mismo valor?
+const [contador, setContador] = useState(0);
+
+<button onClick={() => setContador(0)}>
+  Haz clic
+</button>
+
+
+Si contador ya vale 0, estás solicitando establecerlo nuevamente en 0.
+
+React compara el valor nuevo con el anterior usando una comparación equivalente a Object.is. Si son iguales, React puede omitir el renderizado del componente.
+
+Hay un matiz: en algunas circunstancias React puede llamar al componente antes de descartar el resultado, así que no conviene depender del número exacto de llamadas.
+3. ¿Qué pasa si el estado no se utiliza para nada?
+Imagina esto:
+function App() {
+  const [showAll, setShowAll] = useState(false);
+
+  return (
+    <button onClick={() => setShowAll((prev) => !prev)}>
+      Haz clic
+    </button>
+  );
+}
+
+
+Aunque showAll no se utilice en ningún otro sitio, al hacer clic React recibe un nuevo valor y vuelve a renderizar App.
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Controlled component
+There are many ways to accomplish this; the first method we will take a look at is through the use of so-called controlled components.
+
+Let's add a new piece of state called newNote for storing the user-submitted input and let's set it as the input element's value attribute:
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes)
+  const [newNote, setNewNote] = useState(
+    'a new note...'
+  ) 
+
+  const addNote = (event) => {
+    event.preventDefault()
+    console.log('button clicked', event.target)
+  }
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <ul>
+        {notes.map(note => 
+          <Note key={note.id} note={note} />
+        )}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} />
+        <button type="submit">save</button>
+      </form>   
+    </div>
+  )
+}copy
+The placeholder text stored as the initial value of the newNote state appears in the input element, but the input text can't be edited. The console displays a warning that gives us a clue as to what might be wrong:
+
+provided value to prop without onchange console error
+Since we assigned a piece of the App component's state as the value attribute of the input element, the App component now controls the behavior of the input element.
+
+To enable editing of the input element, we have to register an event handler that synchronizes the changes made to the input with the component's state:
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes)
+  const [newNote, setNewNote] = useState(
+    'a new note...'
+  ) 
+
+  // ...
+
+  const handleNoteChange = (event) => {
+    console.log(event.target.value)
+    setNewNote(event.target.value)
+  }
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <ul>
+        {notes.map(note => 
+          <Note key={note.id} note={note} />
+        )}
+      </ul>
+      <form onSubmit={addNote}>
+        <input
+          value={newNote}
+          onChange={handleNoteChange}
+        />
+        <button type="submit">save</button>
+      </form>   
+    </div>
+  )
+}copy
+We have now registered an event handler to the onChange attribute of the form's input element:
+
+<input
+  value={newNote}
+  onChange={handleNoteChange}
+/>copy
+The event handler is called every time a change occurs in the input element. The event handler function receives the event object as its event parameter:
+
+const handleNoteChange = (event) => {
+  console.log(event.target.value)
+  setNewNote(event.target.value)
+}copy
+The target property of the event object now corresponds to the controlled input element, and event.target.value refers to the input value of that element.
+
+Note that we did not need to call the event.preventDefault() method like we did in the onSubmit event handler. This is because no default action occurs on an input change, unlike a form submission.
+
+You can follow along in the console to see how the event handler is called:
+
+multiple console calls with typing text
+You did remember to install React devtools, right? Good. You can directly view how the state changes from the React Devtools tab:
+
+state changes in react devtools shows typing too
+Now the App component's newNote state reflects the current value of the input, which means that we can complete the addNote function for creating new notes:
+
+const addNote = (event) => {
+  event.preventDefault()
+  const noteObject = {
+    content: newNote,
+    important: Math.random() < 0.5,
+    id: String(notes.length + 1),
+  }
+
+  setNotes(notes.concat(noteObject))
+  setNewNote('')
+}copy
+First, we create a new object for the note called noteObject that will receive its content from the component's newNote state. The unique identifier id is generated based on the total number of notes. This method works for our application since notes are never deleted. With the help of the Math.random() function, our note has a 50% chance of being marked as important.
+
+The new note is added to the list of notes using the concat array method, introduced in part 1:
+
+setNotes(notes.concat(noteObject))copy
+The method does not mutate the original notes array, but rather creates a new copy of the array with the new item added to the end. This is important since we must never mutate state directly in React!
+
+The event handler also resets the value of the controlled input element by calling the setNewNote function of the newNote state:
+
+setNewNote('')copy
+You can find the code for our current application in its entirety in the part2-2 branch of this GitHub repository.
+*/
+/*
+import { useState } from 'react'
+import Note from './components/Note'
+
+const App = (props) => {
+  //(console.clear(), console.log('App funcionando'))
+  const [notes, setNotes] = useState(props.notes)
+  const [newNote, setNewNote] = useState('') 
+
+  const addNote = (event) => {
+    event.preventDefault()//No recargar la pagina al enviar el formulario
+
+    if(newNote === ''){return}
+    else{
+      console.log('button clicked', event.target)
+      const noteObject = {content: newNote,important: Math.random() < 0.5,id: String(notes.length + 1),}
+      setNotes(notes.concat(noteObject))
+      //Como yo lo hize lpm
+      //setNotes((prev)=>[...prev, {id:(prev[prev.length-1].id+1),content:newNote,important:true}])
+      setNewNote('')
+
+    }
+  }
+
+  const handleNoteChange = (event) => {
+    console.log(event.target.value)
+    setNewNote(event.target.value)
+  }
+
+  return(
+    <div>
+      <h1>Notes</h1>
+      <ul>
+        {notes.map((el)=>
+          <Note key={el.id} note={el}></Note>
+        )}
+      </ul>
+
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} placeholder={'a new note...'}/>
+        <button type="submit">save</button>
+      </form>   
+
+    </div>
+  )
+}
+
+export default App
+/**/
+/*
+//F*CKKK concatenar objetos
+
+const prev = {
+  user1: { name: 'Ana' },
+  user2: { name: 'Luis' }
+}
+const next = {
+  ...prev,
+  user2: { name: 'Carlos' },
+  user3: { name: 'Pedro' }
+}
+
+¿Cuál será el resultado?:
+Tendrá user1, user2 (Carlos) y user3 (Pedro).
+...prev copia user1 y user2, pero la propiedad user2 que aparece después reemplaza su valor anterior. user3 se agrega como propiedad nueva.
+
+Solucion: Envolver en parentesis, para que js no detecte las llaves contiguas al igual de next como llaves tipo return, si no como unas llaves de tipo objeto
+
+const next = ({
+  ...prev,
+  user2: { name: 'Carlos' },
+  user3: { name: 'Pedro' })
+}
+Resultado: Se concatena bien
+ {
+    user1: { name: 'Ana' },
+    user2: { name: 'Luis' },
+    user2: { name: 'Carlos' },
+    user3: { name: 'Pedro' }
+ }
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+b Forms
+Let's continue expanding our application by allowing users to add new notes. You can find the code for our current application here.
+
+Saving the notes in the component state
+To get our page to update when new notes are added it's best to store the notes in the App component's state. Let's import the useState function and use it to define a piece of state that gets initialized with the initial notes array passed in the props.
+
+import { useState } from 'react'
+import Note from './components/Note'
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes)
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <ul>
+        {notes.map(note => 
+          <Note key={note.id} note={note} />
+        )}
+      </ul>
+    </div>
+  )
+}
+
+export default App copy
+The component uses the useState function to initialize the piece of state stored in notes with the array of notes passed in the props:
+
+const App = (props) => { 
+  const [notes, setNotes] = useState(props.notes) 
+
+  // ...
+}copy
+We can also use React Developer Tools to see that this really happens:
+
+browser showing dev react tools window
+If we wanted to start with an empty list of notes, we would set the initial value as an empty array, and since the props would not be used, we could omit the props parameter from the function definition:
+
+const App = () => { 
+  const [notes, setNotes] = useState([]) 
+
+  // ...
+}  copy
+Let's stick with the initial value passed in the props for the time being.
+
+Next, let's add an HTML form to the component that will be used for adding new notes.
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes)
+
+  const addNote = (event) => {
+    event.preventDefault()
+    console.log('button clicked', event.target)
+  }
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <ul>
+        {notes.map(note => 
+          <Note key={note.id} note={note} />
+        )}
+      </ul>
+      <form onSubmit={addNote}>
+        <input />
+        <button type="submit">save</button>
+      </form>   
+    </div>
+  )
+}copy
+We have added the addNote function as an event handler to the form element that will be called when the form is submitted, by clicking the submit button.
+
+We use the method discussed in part 1 for defining our event handler:
+
+const addNote = (event) => {
+  event.preventDefault()
+  console.log('button clicked', event.target)
+}copy
+The event parameter is the event that triggers the call to the event handler function:
+
+The event handler immediately calls the event.preventDefault() method, which prevents the default action of submitting a form. The default action would, among other things, cause the page to reload.
+
+The target of the event stored in event.target is logged to the console:
+
+button clicked with form object console
+The target in this case is the form that we have defined in our component.
+
+How do we access the data contained in the form's input element?
+*/
+/*
+import { useState } from 'react'
+import Note from './components/Note'
+
+const App = (props) => {
+  (console.clear(), console.log('App funcionando'))
+  const [notes, setNotes] = useState(props.notes)
+
+  const addNote = (event) => {
+    event.preventDefault()
+    console.log('button clicked', event.target)
+  }
+
+  return(
+    <div>
+      <h1>Notes</h1>
+      <ul>
+        {notes.map((el)=>
+          <Note key={el.id} note={el}></Note>
+        )}
+      </ul>
+
+      <form onSubmit={addNote}>
+      <input />
+      <button type="submit">save</button>
+    </form>   
+
+
+
+    </div>
+  )
+}
+
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Exercises 2.1.-2.5.
@@ -173,7 +931,7 @@ const App = () => {
 export default App
 /**/
 //Fix segun yo, prefiero dejar un programa que funcione jaja
-/**/
+/*
 import {useState} from 'react'
 
 
