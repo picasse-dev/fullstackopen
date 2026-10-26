@@ -1,30 +1,111 @@
-/**/
-/**/
-/**/
-
 /*
-2.9*: The Phonebook Step 4
-Implement a search field that can be used to filter the list of people by name:
+2.10: The Phonebook Step 5
+If you have implemented your application in a single component, refactor it by extracting suitable parts into new components. Maintain the application's state and all event handlers in the App root component.
 
-2.9 search field
-You can implement the search field as an input element that is placed outside the HTML form. The filtering logic shown in the image is case insensitive, meaning that the search term arto also returns results that contain Arto with an uppercase A.
+It is sufficient to extract three components from the application. Good candidates for separate components are, for example, the search filter, the form for adding new people to the phonebook, a component that renders all people from the phonebook, and a component that renders a single person's details.
 
-NB: When you are working on new functionality, it's often useful to "hardcode" some dummy data into your application, e.g.
+The application's root component could look similar to this after the refactoring. The refactored root component below only renders titles and lets the extracted components take care of the rest.
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456', id: 1 },
-    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
-  ])
-
   // ...
+
+  return (
+    <div>
+      <h2>Phonebook</h2>
+
+      <Filter ... />
+
+      <h3>Add a new</h3>
+
+      <PersonForm 
+        ...
+      />
+
+      <h3>Numbers</h3>
+
+      <Persons ... />
+    </div>
+  )
 }copy
-This saves you from having to manually input data into your application for testing out your new functionality.
-/**/
+NB: You might run into problems in this exercise if you define your components "in the wrong place". Now would be a good time to rehearse the chapter do not define a component in another component from the last part.
+*/
 /**/
 import { useState } from 'react'
+
+const normalizeNumber = (number) =>
+  number.replace(/[\s-]/g, '')
+
+const Filter = ({value, onChange}) => {
+  return (
+    <div>
+      <label htmlFor="filterID">Filter shown with:</label>
+      <input
+        id="filterID"
+        type="text"
+        value={value}
+        onChange={onChange}
+        placeholder="Search name"
+      />
+    </div>
+  )
+}
+
+const PersonForm = ({
+  onSubmit,
+  valueName,
+  onChangeName,
+  valueNumber,
+  onChangeNumber
+}) => {
+  return(
+    <form onSubmit={onSubmit}>
+      <div>
+        <label htmlFor="nameForm">Name: </label>
+        <input 
+          id="nameForm"
+          type="text" 
+          value={valueName}
+          onChange={onChangeName}
+          placeholder="new name"
+          required
+        />
+      </div>
+
+      <div>
+        <label htmlFor="numberForm">Number: </label>
+        <input 
+          id="numberForm"
+          type="tel"
+          value={valueNumber}
+          onChange={onChangeNumber}
+          placeholder="new number"
+          required
+        />
+      </div>
+
+      <div>
+        <button type="submit">add</button>
+      </div>
+    </form>
+  )
+}
+
+const Person = ({ name, number }) => (
+  <p>
+    {name} — {number}
+  </p>
+)
+
+const Persons = ({ filteredPersons }) => (
+  filteredPersons.map((person) => (
+    <Person
+      key={person.id}
+      name={person.name}
+      number={person.number}
+    />
+  ))
+)
+
 
 const App = () => {
   const [persons, setPersons] = useState([
@@ -53,6 +134,227 @@ const App = () => {
         (person) => person.name.toLowerCase() === name.toLowerCase()
       )
       
+    if (personExists) {
+      alert(`${newName} is already added`)
+      return
+    }
+
+    const numberExists = persons.some(
+      (person) => 
+        normalizeNumber(person.number) === normalizeNumber(number)
+    )
+
+    if (numberExists) {
+      alert(`${number} is already added`)
+      return
+    }
+
+    setPersons((prev) => [
+      ...prev, 
+      {
+        name, 
+        number, 
+        id: prev.length > 0 ?
+        Math.max(...prev.map( p => p.id)) + 1:
+        1,
+      }
+    ])
+    setNewName('')
+    setNewNumber('')
+  }
+
+  const searchWord = word.trim().toLowerCase()
+
+  const filteredPersons = persons.filter((el) => 
+    el.name.toLowerCase().includes(searchWord))
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+
+      <Filter value={word} onChange={handleChangeWord}/>
+
+      <h2>Add a new</h2>
+
+      <PersonForm
+        onSubmit={handleSubmit}
+        valueName={newName}
+        onChangeName={handleChangeName}
+        valueNumber={newNumber}
+        onChangeNumber={handleChangeNumber}
+      />
+
+      <h2>Numbers</h2>
+
+      <Persons filteredPersons={filteredPersons}/>
+    </>
+  )
+}
+export default App
+/**/
+/*
+F*CKKK
+1)
+const Person = ({ id, name, number }) =>
+  <p key={id}>{id} {name} {number}</p>
+
+La key sobra ahí. ¿Por qué? Porque React necesita la key en el elemento que se genera directamente dentro del .map(), y ese elemento ya la recibe desde Persons.
+
+2) Los componentes van asi 
+const Component = () => 
+  logica
+o así 
+const Compoent = () => {
+  logica
+    return(
+      <>
+        jsx
+      </>
+    )
+  }
+pero nunca así
+const Component = () => {
+    logica
+  }
+porque?, pues porque las llaves siempre van con el return, no se va a renderizar eso y no da error WTF, queda uno medio loco la verdad
+
+3) la key va en el componente o elemento que devuelve directamente el .map(), no dentro del componente hijo.
+
+Aca sí
+const Persons = ({ filteredPersons }) =>
+  filteredPersons.map((el) =>
+    <Person
+      key={el.id}
+      id={el.id}
+      name={el.name}
+      number={el.number}
+    />
+  )
+
+Aca no wtfffff
+const Person = ({ id, name, number }) =>
+  <p key={id}>{id} {name} {number}</p>
+La key sobra ahí. ¿Por qué? Porque React necesita la key en el elemento que se genera directamente dentro del .map(), y ese elemento ya la recibe desde Persons.
+
+// ✅ Retorno implícito
+const Person = () => <p>Hola</p>
+
+// ❌ No devuelve el JSX
+const Person = () => {
+  <p>Hola</p>
+}
+
+// ✅ Retorno explícito
+const Person = () => {
+  return <p>Hola</p>
+}
+Esta es la mas WTF de todas para ser honesto, con los ()
+const Persons = ({ filteredPersons }) => (
+  filteredPersons.map((person) => (
+    <Person
+      key={person.id}
+      name={person.name}
+      number={person.number}
+    />
+  ))
+)
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+2.9*: The Phonebook Step 4
+Implement a search field that can be used to filter the list of people by name:
+
+2.9 search field
+You can implement the search field as an input element that is placed outside the HTML form. The filtering logic shown in the image is case insensitive, meaning that the search term arto also returns results that contain Arto with an uppercase A.
+
+NB: When you are working on new functionality, it's often useful to "hardcode" some dummy data into your application, e.g.
+
+const App = () => {
+  const [persons, setPersons] = useState([
+    { name: 'Arto Hellas', number: '040-123456', id: 1 },
+    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
+    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
+    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
+  ])
+
+  // ...
+}copy
+This saves you from having to manually input data into your application for testing out your new functionality.
+/**/
+/*
+//LEGIBLE
+import { useState } from 'react'
+
+const App = () => {
+  const [persons, setPersons] = useState([
+    { name: 'Arto Hellas', number: '040-123456', id: 1 },
+    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
+    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
+    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
+  ])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [word, setWord] = useState('')
+  
+  const handleChangeName = (e) => setNewName(e.target.value)
+  const handleChangeNumber = (e) => setNewNumber(e.target.value)
+  const handleChangeWord = (e) => setWord(e.target.value)
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const name = newName.trim()
+    const number = newNumber.trim()
+
+    if (!name || !number) return
+
+    const personExists = persons.some(
+        (person) => person.name.toLowerCase() === name.toLowerCase()
+      )
+
     if (personExists) {
       alert(`${newName} is already added`)
       return
