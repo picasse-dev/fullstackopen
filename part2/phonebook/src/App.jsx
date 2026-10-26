@@ -2,9 +2,379 @@
 /**/
 /**/
 
+/*
+2.9*: The Phonebook Step 4
+Implement a search field that can be used to filter the list of people by name:
+
+2.9 search field
+You can implement the search field as an input element that is placed outside the HTML form. The filtering logic shown in the image is case insensitive, meaning that the search term arto also returns results that contain Arto with an uppercase A.
+
+NB: When you are working on new functionality, it's often useful to "hardcode" some dummy data into your application, e.g.
+
+const App = () => {
+  const [persons, setPersons] = useState([
+    { name: 'Arto Hellas', number: '040-123456', id: 1 },
+    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
+    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
+    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
+  ])
+
+  // ...
+}copy
+This saves you from having to manually input data into your application for testing out your new functionality.
 /**/
 /**/
+import { useState } from 'react'
+
+const App = () => {
+  const [persons, setPersons] = useState([
+    { name: 'Arto Hellas', number: '040-123456', id: 1 },
+    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
+    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
+    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
+  ])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [word, setWord] = useState('')
+  
+  const handleChangeName = (e) => setNewName(e.target.value)
+  const handleChangeNumber = (e) => setNewNumber(e.target.value)
+  const handleChangeWord = (e) => setWord(e.target.value)
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const name = newName.trim()
+    const number = newNumber.trim()
+
+    if (!name || !number) return
+
+    const personExists = persons.some(
+        (person) => person.name.toLowerCase() === name.toLowerCase()
+      )
+      
+    if (personExists) {
+      alert(`${newName} is already added`)
+      return
+    }
+
+    const numberExists = persons.some(
+      (person) => person.number.replace(/[\s-]/g, '') === number.replace(/[\s-]/g, '')
+    )
+
+    if (numberExists) {
+      alert(`${number} is already added`)
+      return
+    }
+
+    setPersons((prev) => [
+      ...prev, 
+      {
+        name, 
+        number, 
+        id: prev.length > 0 ?
+        Math.max(...prev.map( p => p.id)) + 1:
+        1,
+      }
+    ])
+    setNewName('')
+    setNewNumber('')
+  }
+
+  const searchWord = word.trim().toLowerCase()
+
+  const filteredPersons = persons.filter((el) => 
+    el.name.toLowerCase().includes(searchWord))
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+      <p>Filter shown with:
+        <input 
+        type="text" 
+        value={word}
+        onChange={handleChangeWord}
+        placeholder="search name"
+        />
+      </p>
+
+      <h2>Add a new</h2>
+      <form onSubmit={handleSubmit}>
+        <div>
+          name:
+          <input
+            type="text"
+            value={newName}
+            onChange={handleChangeName}
+            placeholder="new name"
+            required
+          />
+        </div>
+        <div>
+          number:
+          <input
+            type="tel"
+            value={newNumber}
+            onChange={handleChangeNumber}
+            placeholder="000 000 0000"
+            required
+          />
+        </div>
+        <div>
+          <button type="submit">add</button>
+        </div>
+      </form>
+
+      <h2>Numbers</h2>
+      {filteredPersons.map((el) => (<p key={el.id}>{el.id} {el.name} {el.number}</p>))}
+    </>
+  )
+}
+export default App
 /**/
+/*
+F*CKKK
+1. ¿Por qué Math.max(...prev.map(p => p.id)) lleva ...?
+Mira primero qué devuelve cada parte.
+Supongamos que prev contiene estos contactos:
+const prev = [
+  { name: "Arto", id: 1 },
+  { name: "Ada", id: 2 },
+  { name: "Dan", id: 3 }
+]
+
+Paso 1: ejecutamos prev.map(p => p.id).
+prev.map(p => p.id) // [1, 2, 3]
+map() devuelve un array con los IDs.
+
+Paso 2: ¿qué espera Math.max()?
+Math.max() recibe números como argumentos separados:
+Math.max(1, 2, 3) // 3
+
+Pero si le pasas directamente el array:
+Math.max([1, 2, 3]) // NaN
+¿Por qué? Porque Math.max() no está diseñado para recibir un array como argumento único.
+
+Paso 3: aquí entra el operador ..., llamado spread operator.
+Math.max(...[1, 2, 3])
+JavaScript expande el array y lo convierte en argumentos separados, como si hubieras escrito:
+Math.max(1, 2, 3) // 3
+
+Por tanto:
+Math.max(...prev.map(p => p.id)) + 1
+Significa: obtener todos los IDs, encontrar el mayor y sumarle uno.
+También podrías hacerlo sin ..., pero tendrías que buscar el máximo de otra forma, por ejemplo con un bucle.
+
+2. ¿Por qué hay una coma después del 1?
+Te refieres a esta parte:
+id: prev.length > 0
+  ? Math.max(...prev.map(p => p.id)) + 1
+  : 1,
+
+Esa coma es una coma final (trailing comma).
+Se utiliza para separar las propiedades del objeto. En este caso, separaría id de cualquier propiedad que agregues después.
+
+Por ejemplo, esto es válido:
+const persona = {
+  name: "Ada",
+  number: "12345",
+  id: 1,
+}
+
+Y esto también:
+const persona = {
+  name: "Ada",
+  number: "12345",
+  id: 1
+}
+
+//name y number es algo crazy
+//name, number, WTFFFFFFFF
+//name:{name}, number:{number}, asi le hacia yo todo noob
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+2.8: The Phonebook Step 3
+Expand your application by allowing users to add phone numbers to the phone book. You will need to add a second input element to the form (along with its own event handler):
+
+<form>
+  <div>name: <input /></div>
+  <div>number: <input /></div>
+  <div><button type="submit">add</button></div>
+</form>copy
+At this point, the application could look something like this. The image also displays the application's state with the help of React developer tools:
+
+2.8 sample screenshot
+*/
+/*
+import { useState } from "react";
+
+const App = () => {
+  const [persona, setPersona] = useState([{ name: "arto hellas", number:"777-7777" }]);
+  const [newName, setNewName] = useState("");
+  const [newNumber, setNewNumber] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const name = newName.trim();
+    const number = newNumber.trim().replace(/\s/g, "");
+
+    if (name === "" || number === "") return;
+
+    if (persona.some((obj) => obj.name === name) ) {
+      alert(`${newName} is already added to phonebook :D`);
+      setNewName("");
+      return;
+    }
+    
+    if (persona.some((obj) => obj.number === number) ){
+      alert(`${newNumber} is already added to phonebook :D`);
+      setNewNumber("");
+      return;
+    }
+
+    setPersona((prev) => [...prev, { name:name, number:number }]);
+    setNewName("");
+    setNewNumber("");
+  };
+
+  const handleChangeName = (e) => {
+    setNewName(e.target.value);
+  };
+
+  const handleChangeNumber = (e) => {
+    setNewNumber(e.target.value);
+  };
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+
+      <form onSubmit={handleSubmit}>
+        <div>
+          name:
+          <input
+            type="text"
+            value={newName}
+            onChange={handleChangeName}
+            placeholder="new name"
+          />
+        </div>
+        <div>
+          number:
+          <input
+            type="tel"
+            value={newNumber}
+            onChange={handleChangeNumber}
+            placeholder="000 000 00 00"
+          />
+        </div>
+        <div>
+          <button type="submit">add</button>
+        </div>
+      </form>
+
+      <h2>Numbers</h2>
+        {persona.map((el) => (<p key={el.name}>{el.name} {el.number}</p>))}
+    </>
+  );
+};
+export default App;
+/**/
+/*
+//F*CKKK crazy asignment
+
+¡Exacto! 😂 En JavaScript, si la propiedad y la variable tienen el mismo nombre, puedes usar la sintaxis abreviada de propiedades.
+setPersona((prev) => [...prev, { name, number }]);
+
+
+Es equivalente a:
+setPersona((prev) => [...prev, { name: name, number: number }]);
+
+
+Ambas formas funcionan igual. ¡Menos código, misma funcionalidad!
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 2.7: The Phonebook Step 2
@@ -26,49 +396,79 @@ Using template strings is the more idiomatic option and the sign of a true JavaS
 
 
 */
-/**/
+/*
 import { useState } from "react";
 
 const App = () => {
   const [persona, setPersona] = useState([{ name: "arto hellas" }]);
   const [newName, setNewName] = useState("");
+
   const handleSubmit = (e) => {
-    e.preventDefault()
-    if(newName.trim() === '')return
-    setPersona((prev) => [...prev,{ name: newName.trim() }])
-    setNewName('')
-  }
+    e.preventDefault();
+    if (newName.trim() === "") return;
+    if (persona.some((obj) => obj.name === newName.trim())) {
+      alert(`${newName} is already added to phonebook :D`);
+      setNewName("");
+      return;
+    }
+    setPersona((prev) => [...prev, { name: newName.trim() }]);
+    setNewName(""); 
+  };
+
   const handleChange = (e) => {
-    setNewName(e.target.value)
-  }
+    setNewName(e.target.value);
+  };
   return (
     <>
       <h2>Phonebook</h2>
 
       <form onSubmit={handleSubmit}>
-        <div>name: 
-          <input 
-          type={'text'} 
-          value={newName} 
-          onChange={handleChange}
-          placeholder='new name'/>
+        <div>
+          name:
+          <input
+            type="text"
+            value={newName}
+            onChange={handleChange}
+            placeholder="new name"
+          />
         </div>
         <div>
-          <button type={"submit"}>add</button>
+          <button type="submit">add</button>
         </div>
       </form>
 
       <h2>Numbers</h2>
       <ul>
-        {persona.map((el) => 
+        {persona.map((el) => (
           <li key={el.name}>{el.name}</li>
-        )}
+        ))}
       </ul>
     </>
-  )
-}
+  );
+};
 export default App;
 /**/
+/*
+//F*CKKK
+Buscar un objeto dentro de un vector de objetos con some, no con includes
+const vector = [
+  { id: 1, nombre: "Ana" },
+  { id: 2, nombre: "Luis" }
+];
+console.log(vector.includes({ id: 1, nombre: "Ana" })); // false
+
+Aunque el objeto tenga los mismos datos, devuelve false porque es un objeto diferente en memoria.
+La solución: usar .some()
+Si quieres comprobar si existe un objeto con determinado id y obtener true o false:
+
+const encontrado = vector.some(obj => obj.id === 1);
+console.log(encontrado); // true
+/**/
+
+
+
+
+
 
 
 
