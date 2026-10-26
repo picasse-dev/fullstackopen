@@ -31,81 +31,13 @@ NB: You might run into problems in this exercise if you define your components "
 */
 /**/
 import { useState } from 'react'
+import Filter from './Components/Filter'
+import PersonForm from './Components/PersonForm'
+import Persons from './Components/Persons'
+
 
 const normalizeNumber = (number) =>
   number.replace(/[\s-]/g, '')
-
-const Filter = ({value, onChange}) => {
-  return (
-    <div>
-      <label htmlFor="filterID">Filter shown with:</label>
-      <input
-        id="filterID"
-        type="text"
-        value={value}
-        onChange={onChange}
-        placeholder="Search name"
-      />
-    </div>
-  )
-}
-
-const PersonForm = ({
-  onSubmit,
-  valueName,
-  onChangeName,
-  valueNumber,
-  onChangeNumber
-}) => {
-  return(
-    <form onSubmit={onSubmit}>
-      <div>
-        <label htmlFor="nameForm">Name: </label>
-        <input 
-          id="nameForm"
-          type="text" 
-          value={valueName}
-          onChange={onChangeName}
-          placeholder="new name"
-          required
-        />
-      </div>
-
-      <div>
-        <label htmlFor="numberForm">Number: </label>
-        <input 
-          id="numberForm"
-          type="tel"
-          value={valueNumber}
-          onChange={onChangeNumber}
-          placeholder="new number"
-          required
-        />
-      </div>
-
-      <div>
-        <button type="submit">add</button>
-      </div>
-    </form>
-  )
-}
-
-const Person = ({ name, number }) => (
-  <p>
-    {name} — {number}
-  </p>
-)
-
-const Persons = ({ filteredPersons }) => (
-  filteredPersons.map((person) => (
-    <Person
-      key={person.id}
-      name={person.name}
-      number={person.number}
-    />
-  ))
-)
-
 
 const App = () => {
   const [persons, setPersons] = useState([
