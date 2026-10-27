@@ -1,0 +1,19 @@
+{
+  "notes": [
+    {
+      "id": "1",
+      "content": "HTML is easy (this shit comes from a server)",
+      "important": true
+    },
+    {
+      "id": "2",
+      "content": "Browser can execute only JavaScript (Using axios for the Fetching)",
+      "important": false
+    },
+    {
+      "id": "3",
+      "content": "GET and POST are the most important methods of HTTP protocol (And JSON server as a development dependency, to act as our server, so this server runs on port 3001, localhost:3001/notes)",
+      "important": true
+    }
+  ]
+}

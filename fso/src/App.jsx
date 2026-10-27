@@ -13,6 +13,786 @@
 /**/
 /**/
 /**/
+/**/
+/**/
+/**/
+
+/*
+Effect-hooks
+We have already used state hooks that were introduced along with React version 16.8.0, which provide state to React components defined as functions - the so-called functional components. Version 16.8.0 also introduces effect hooks as a new feature. As per the official docs:
+
+Effects let a component connect to and synchronize with external systems. This includes dealing with network, browser DOM, animations, widgets written using a different UI library, and other non-React code.
+
+As such, effect hooks are precisely the right tool to use when fetching data from a server.
+
+Let's remove the fetching of data from main.jsx. Since we're going to be retrieving the notes from the server, there is no longer a need to pass data as props to the App component. So main.jsx can be simplified to:
+
+import ReactDOM from "react-dom/client";
+import App from "./App";
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);copy
+The App component changes as follows:
+
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import Note from './components/Note'
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  useEffect(() => {
+    console.log('effect')
+    axios
+      .get('http://localhost:3001/notes')
+      .then(response => {
+        console.log('promise fulfilled')
+        setNotes(response.data)
+      })
+  }, [])
+  console.log('render', notes.length, 'notes')
+
+  // ...
+}copy
+We have also added a few helpful prints, which clarify the progression of the execution.
+
+This is printed to the console:
+
+render 0 notes
+effect
+promise fulfilled
+render 3 notescopy
+First, the body of the function defining the component is executed and the component is rendered for the first time. At this point render 0 notes is printed, meaning data hasn't been fetched from the server yet.
+
+The following function, or effect in React parlance:
+
+() => {
+  console.log('effect')
+  axios
+    .get('http://localhost:3001/notes')
+    .then(response => {
+      console.log('promise fulfilled')
+      setNotes(response.data)
+    })
+}copy
+is executed immediately after rendering. The execution of the function results in effect being printed to the console, and the command axios.get initiates the fetching of data from the server as well as registers the following function as an event handler for the operation:
+
+response => {
+  console.log('promise fulfilled')
+  setNotes(response.data)
+})copy
+When data arrives from the server, the JavaScript runtime calls the function registered as the event handler, which prints promise fulfilled to the console and stores the notes received from the server into the state using the function setNotes(response.data).
+
+As always, a call to a state-updating function triggers the re-rendering of the component. As a result, render 3 notes is printed to the console, and the notes fetched from the server are rendered to the screen.
+
+Finally, let's take a look at the definition of the effect hook as a whole:
+
+useEffect(() => {
+  console.log('effect')
+  axios
+    .get('http://localhost:3001/notes').then(response => {
+      console.log('promise fulfilled')
+      setNotes(response.data)
+    })
+}, [])copy
+Let's rewrite the code a bit differently.
+
+const hook = () => {
+  console.log('effect')
+  axios
+    .get('http://localhost:3001/notes')
+    .then(response => {
+      console.log('promise fulfilled')
+      setNotes(response.data)
+    })
+}
+
+useEffect(hook, [])copy
+Now we can see more clearly that the function useEffect takes two parameters. The first is a function, the effect itself. According to the documentation:
+
+By default, effects run after every completed render, but you can choose to fire it only when certain values have changed.
+
+So by default, the effect is always run after the component has been rendered. In our case, however, we only want to execute the effect along with the first render.
+
+The second parameter of useEffect is used to specify how often the effect is run. If the second parameter is an empty array [], then the effect is only run along with the first render of the component.
+
+There are many possible use cases for an effect hook other than fetching data from the server. However, this use is sufficient for us, for now.
+
+Think back to the sequence of events we just discussed. Which parts of the code are run? In what order? How often? Understanding the order of events is critical!
+
+Note that we could have also written the code for the effect function this way:
+
+useEffect(() => {
+  console.log('effect')
+
+  const eventHandler = response => {
+    console.log('promise fulfilled')
+    setNotes(response.data)
+  }
+
+  const promise = axios.get('http://localhost:3001/notes')
+  promise.then(eventHandler)
+}, [])copy
+A reference to an event handler function is assigned to the variable eventHandler. The promise returned by the get method of Axios is stored in the variable promise. The registration of the callback happens by giving the eventHandler variable, referring to the event-handler function, as an argument to the then method of the promise. It isn't usually necessary to assign functions and promises to variables, and a more compact way of representing things, as seen below, is sufficient.
+
+useEffect(() => {
+  console.log('effect')
+  axios
+    .get('http://localhost:3001/notes')
+    .then(response => {
+      console.log('promise fulfilled')
+      setNotes(response.data)
+    })
+}, [])copy
+We still have a problem with our application. When adding new notes, they are not stored on the server.
+
+The code for the application, as described so far, can be found in full on github, on branch part2-4.
+
+The development runtime environment
+The configuration for the whole application has steadily grown more complex. Let's review what happens and where. The following image describes the makeup of the application
+
+diagram of composition of react app
+The JavaScript code making up our React application is run in the browser. The browser gets the JavaScript from the React dev server, which is the application that runs after running the command npm run dev. The dev-server transforms the JavaScript into a format understood by the browser. Among other things, it stitches together JavaScript from different files into one file. We'll discuss the dev-server in more detail in part 7 of the course.
+
+The React application running in the browser fetches the JSON formatted data from json-server running on port 3001 on the machine. The server we query the data from - json-server - gets its data from the file db.json.
+
+At this point in development, all the parts of the application happen to reside on the software developer's machine, otherwise known as localhost. The situation changes when the application is deployed to the internet. We will do this in part 3.
+*/
+/**/
+//UseEfeect WTF pero esto que es
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import Note from './components/Note'
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  useEffect(() => {
+    console.log('effect')
+    axios
+      .get('http://localhost:3001/notes')
+      .then(response => {
+        console.log('promise fulfilled')
+        setNotes(response.data)
+      })
+  }, [])//Esto se ejecuta una sola vez componentDidMount
+  console.log('render', notes.length, 'notes')
+
+  const addNote = (event) => {
+    event.preventDefault()
+
+    if(newNote === ''){return}
+    else{
+      const noteObject = {content: newNote,important: Math.random() < 0.5,id: String(notes.length + 1),}
+      setNotes(notes.concat(noteObject))
+      setNewNote('')
+    }
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+
+  const notesToShow = showAll
+    ? notes
+    : notes.filter(el => el.important === true)
+
+  return(
+    <div>
+      <h1>Notes</h1>
+      <button onClick={() => setShowAll((prev) => !prev) }>show {showAll ? 'important' : 'all'}</button>
+      <ul>
+        {notesToShow.map((el)=>
+          <Note key={el.id} note={el}></Note>
+        )}
+      </ul>
+
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} placeholder='a new note...'/>
+        <button type="submit">save</button>
+      </form> 
+    </div>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Axios and promises
+Now we are ready to use Axios. Going forward, json-server is assumed to be running on port 3001.
+
+NB: To run json-server and your react app simultaneously, you may need to use two terminal windows. One to keep json-server running and the other to run our React application.
+
+The library can be brought into use the same way other libraries, i.e., by using an appropriate import statement.
+
+Add the following to the file main.jsx:
+
+import axios from 'axios'
+
+const promise = axios.get('http://localhost:3001/notes')
+console.log(promise)
+
+const promise2 = axios.get('http://localhost:3001/foobar')
+console.log(promise2)copy
+If you open http://localhost:5173/ in the browser, this should be printed to the console
+
+promises printed to console
+Axios' method get returns a promise.
+
+The documentation on Mozilla's site states the following about promises:
+
+A Promise is an object representing the eventual completion or failure of an asynchronous operation.
+
+In other words, a promise is an object that represents an asynchronous operation. A promise can have three distinct states:
+
+The promise is pending: It means that the asynchronous operation corresponding to the promise has not yet finished and the final value is not available yet.
+The promise is fulfilled: It means that the operation has been completed and the final value is available, which generally is a successful operation.
+The promise is rejected: It means that an error prevented the final value from being determined, which generally represents a failed operation.
+There are many details related to promises, but understanding these three states is sufficient for us for now. If you want, you can read more about promises in Mozilla's documentation.
+
+The first promise in our example is fulfilled, representing a successful axios.get('http://localhost:3001/notes') request. The second one, however, is rejected, and the console tells us the reason. It looks like we were trying to make an HTTP GET request to a non-existent address.
+
+If, and when, we want to access the result of the operation represented by the promise, we must register an event handler to the promise. This is achieved using the method then:
+
+const promise = axios.get('http://localhost:3001/notes')
+
+promise.then(response => {
+  console.log(response)
+})copy
+The following is printed to the console:
+
+json object data printed to console
+The JavaScript runtime environment calls the callback function registered by the then method providing it with a response object as a parameter. The response object contains all the essential data related to the response of an HTTP GET request, which would include the returned data, status code, and headers.
+
+Storing the promise object in a variable is generally unnecessary, and it's instead common to chain the then method call to the axios method call, so that it follows it directly:
+
+axios.get('http://localhost:3001/notes').then(response => {
+  const notes = response.data
+  console.log(notes)
+})copy
+The callback function now takes the data contained within the response, stores it in a variable, and prints the notes to the console.
+
+A more readable way to format chained method calls is to place each call on its own line:
+
+axios
+  .get('http://localhost:3001/notes')
+  .then(response => {
+    const notes = response.data
+    console.log(notes)
+  })copy
+The data returned by the server is plain text, basically just one long string. The axios library is still able to parse the data into a JavaScript array, since the server has specified that the data format is application/json; charset=utf-8 (see the previous image) using the content-type header.
+
+We can finally begin using the data fetched from the server.
+
+Let's try and request the notes from our local server and render them, initially as the App component. Please note that this approach has many issues, as we're rendering the entire App component only when we successfully retrieve a response:
+
+import ReactDOM from 'react-dom/client'
+import axios from 'axios'
+import App from './App'
+
+axios.get('http://localhost:3001/notes').then(response => {
+  const notes = response.data
+  ReactDOM.createRoot(document.getElementById('root')).render(<App notes={notes} />)
+})copy
+This method could be acceptable in some circumstances, but it's somewhat problematic. Let's instead move the fetching of the data into the App component.
+
+What's not immediately obvious, however, is where the command axios.get should be placed within the component.
+*/
+/*
+import { useState } from 'react'
+import Note from './components/Note'
+import axios from 'axios'
+
+////Axios
+//axios.get return a promise
+//A Promise is an object representing the eventual completion or failure of an asynchronous operation. States: pending/fulfilled/rejected
+
+//// State fulfilled
+//   axios
+//    .get('http://localhost:3001/notes')
+//    .then(response => {
+//      const notes = response.data
+//      console.log(notes)
+//   })
+
+////Stated rejected
+//const promise2 = axios.get('http://localhost:3001/foobar')
+//console.log(promise2)
+
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes)
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  const addNote = (event) => {
+    event.preventDefault()
+
+    if(newNote === ''){return}
+    else{
+      const noteObject = {content: newNote,important: Math.random() < 0.5,id: String(notes.length + 1),}
+      setNotes(notes.concat(noteObject))
+      setNewNote('')
+    }
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+
+  const notesToShow = showAll
+    ? notes
+    : notes.filter(el => el.important === true)
+
+  return(
+    <div>
+      <h1>Notes</h1>
+      <button onClick={() => setShowAll((prev) => !prev) }>show {showAll ? 'important' : 'all'}</button>
+      <ul>
+        {notesToShow.map((el)=>
+          <Note key={el.id} note={el}></Note>
+        )}
+      </ul>
+
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} placeholder='a new note...'/>
+        <button type="submit">save</button>
+      </form> 
+    </div>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+npm
+Let's get back to the topic of fetching data from the server.
+
+We could use the previously mentioned promise-based function fetch to pull the data from the server. Fetch is a great tool. It is standardized and supported by all modern browsers (excluding IE).
+
+That being said, we will be using the axios library instead for communication between the browser and server. It functions like fetch but is somewhat more pleasant to use. Another good reason to use Axios is that it helps us get familiar with adding external libraries, or npm packages, to React projects.
+
+Nowadays, practically all JavaScript projects are defined using the node package manager, aka npm. The projects created using Vite also follow the npm format. A clear indicator that a project uses npm is the package.json file located at the root of the project:
+
+{
+  "name": "part2-notes-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "vite": "^6.0.5"
+  }
+}copy
+At this point, the dependencies part is of most interest to us as it defines what dependencies, or external libraries, the project has.
+
+We now want to use axios. Theoretically, we could define the library directly in the package.json file, but it is better to install it from the command line.
+
+npm install axioscopy
+NB npm-commands should always be run in the project root directory, which is where the package.json file can be found.
+
+Axios is now included among the other dependencies:
+
+{
+  "name": "part2-notes-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  // ...
+}copy
+In addition to adding axios to the dependencies, the npm install command also downloaded the library code. As with other dependencies, the code can be found in the node_modules directory located in the root. As one might have noticed, node_modules contains a fair amount of interesting stuff.
+
+Let's make another addition. Install json-server as a development dependency (only used during development) by executing the command:
+
+npm install json-server --save-devcopy
+and making a small addition to the scripts part of the package.json file:
+
+{
+  // ... 
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "server": "json-server -p 3001 db.json"
+  },
+}copy
+We can now conveniently, without parameter definitions, start the json-server from the project root directory with the command:
+
+npm run servercopy
+We will get more familiar with the npm tool in the third part of the course.
+
+NB The previously started json-server must be terminated before starting a new one; otherwise, there will be trouble:
+
+cannot bind to port 3001 error
+The red print in the error message informs us about the issue:
+
+Cannot bind to port 3001. Please specify another port number either through --port argument or through the json-server.json configuration file
+
+As we can see, the application is not able to bind itself to the port. The reason being that port 3001 is already occupied by the previously started json-server.
+
+We used the command npm install twice, but with slight differences:
+
+npm install axios
+npm install json-server --save-devcopy
+There is a fine difference in the parameters. axios is installed as a runtime dependency of the application because the execution of the program requires the existence of the library. On the other hand, json-server was installed as a development dependency (--save-dev), since the program itself doesn't require it. It is used for assistance during software development. There will be more on different dependencies in the next part of the course.
+*/
+/**/
+//Json server
+//1) npm install json-server --save-dev
+//2) in packager.json/scripts add:  
+//   "server": "json-server -p 3001 db.json"
+//   db.json created in the root dir, and fill with json lol
+//3) npm run server
+// http://localhost:3001/notes
+
+// or the one use sintex not installing:
+// 1, 2 y 3) en un solo comando seria
+// npx json-server --port 3001 db.json (Pero esta no la vamos a usar)
+
+//4) Ah y tambien instalamos axios:
+//   npm install axios
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+The browser as a runtime environment
+Our first task is fetching the already existing notes to our React application from the address http://localhost:3001/notes.
+
+In the part0 example project, we already learned a way to fetch data from a server using JavaScript. The code in the example was fetching the data using XMLHttpRequest, otherwise known as an HTTP request made using an XHR object. This is a technique introduced in 1999, which every browser has supported for a good while now.
+
+The use of XHR is no longer recommended, and browsers already widely support the fetch method, which is based on so-called promises, instead of the event-driven model used by XHR.
+
+As a reminder from part0 (which one should remember to not use without a pressing reason), data was fetched using XHR in the following way:
+
+const xhttp = new XMLHttpRequest()
+
+xhttp.onreadystatechange = function() {
+  if (this.readyState == 4 && this.status == 200) {
+    const data = JSON.parse(this.responseText)
+    // handle the response that is saved in variable data
+  }
+}
+
+xhttp.open('GET', '/data.json', true)
+xhttp.send()copy
+Right at the beginning, we register an event handler to the xhttp object representing the HTTP request, which will be called by the JavaScript runtime whenever the state of the xhttp object changes. If the change in state means that the response to the request has arrived, then the data is handled accordingly.
+
+It is worth noting that the code in the event handler is defined before the request is sent to the server. Despite this, the code within the event handler will be executed at a later point in time. Therefore, the code does not execute synchronously "from top to bottom", but does so asynchronously. JavaScript calls the event handler that was registered for the request at some point.
+
+A synchronous way of making requests that's common in Java programming, for instance, would play out as follows (NB, this is not actually working Java code):
+
+HTTPRequest request = new HTTPRequest();
+
+String url = "https://studies.cs.helsinki.fi/exampleapp/data.json";
+List<Note> notes = request.get(url);
+
+notes.forEach(m => {
+  System.out.println(m.content);
+});copy
+In Java, the code executes line by line and stops to wait for the HTTP request, which means waiting for the command request.get(...) to finish. The data returned by the command, in this case the notes, are then stored in a variable, and we begin manipulating the data in the desired manner.
+
+In contrast, JavaScript engines, or runtime environments follow the asynchronous model. In principle, this requires all IO operations (with some exceptions) to be executed as non-blocking. This means that code execution continues immediately after calling an IO function, without waiting for it to return.
+
+When an asynchronous operation is completed, or, more specifically, at some point after its completion, the JavaScript engine calls the event handlers registered to the operation.
+
+Currently, JavaScript engines are single-threaded, which means that they cannot execute code in parallel. As a result, it is a requirement in practice to use a non-blocking model for executing IO operations. Otherwise, the browser would "freeze" during, for instance, the fetching of data from a server.
+
+One consequence of JavaScript engines being single-threaded is that if code execution takes a long time, the browser becomes unresponsive for the duration of the execution. If the following code is added to the beginning of the App component:
+
+const App = (props) => {
+  const [notes, setNotes] = useState(props.notes)
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  setTimeout(() => {
+    console.log('loop..')
+    let i = 0
+    while (i < 99999999999) {
+      i++
+    }
+    console.log('end')
+  }, 5000)
+
+  // ...
+}copy
+everything works normally for five seconds. When the function defined as the parameter of setTimeout is executed, the browser page becomes unresponsive for the duration of the long loop. The page freezes completely, meaning you cannot click its buttons or use any other functionality.
+
+For the browser to remain responsive, i.e., to be able to continuously react to user operations with sufficient speed, the code logic needs to be such that no single computation can take too long.
+
+There is a host of additional material on the subject to be found on the internet. One particularly clear presentation of the topic is the keynote by Philip Roberts called What the heck is the event loop anyway?
+
+In today's browsers, it is possible to run parallelized code with the help of so-called web workers. The event loop of an individual browser window is, however, still only handled by a single thread.
+*/
+/*
+import { useState } from 'react'
+import Note from './components/Note'
+console.log('Imports')
+
+const App = (props) => {
+  console.log('App')
+  const [notes, setNotes] = useState(props.notes)
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  console.log('settimeout')
+  setTimeout(() => {
+    console.log('loop..')
+    let i = 0
+    while (i < 9) {
+      i++
+      console.log(i)
+    }
+    console.log('end')
+  }, 5000)
+
+  console.log('functions')
+  const addNote = (event) => {
+    event.preventDefault()
+
+    if(newNote === ''){return}
+    else{
+      const noteObject = {content: newNote,important: Math.random() < 0.5,id: String(notes.length + 1),}
+      setNotes(notes.concat(noteObject))
+      setNewNote('')
+    }
+  }
+
+  const handleNoteChange = (event) => {
+    setNewNote(event.target.value)
+  }
+
+  const notesToShow = showAll
+    ? notes
+    : notes.filter(el => el.important === true)
+
+  console.log('return')
+  return(
+    <div>
+      {console.log('return div')}
+      <h1>Notes</h1>
+      <button onClick={() => setShowAll((prev) => !prev) }>show {showAll ? 'important' : 'all'}</button>
+      <ul>
+        {notesToShow.map((el)=>
+          <Note key={el.id} note={el}></Note>
+        )}
+      </ul>
+
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} placeholder='a new note...'/>
+        <button type="submit">save</button>
+      </form>   
+
+    {console.log('end divs')}
+    </div>
+  )
+}
+console.log('export')
+export default App
+console.log('after export')
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+C
+Getting data from server
+For a while now we have only been working on "frontend", i.e. client-side (browser) functionality. We will begin working on "backend", i.e. server-side functionality in the third part of this course. Nonetheless, we will now take a step in that direction by familiarizing ourselves with how the code executing in the browser communicates with the backend.
+
+Let's use a tool meant to be used during software development called JSON Server to act as our server.
+
+Create a file named db.json in the root directory of the previous notes project with the following content:
+
+{
+  "notes": [
+    {
+      "id": "1",
+      "content": "HTML is easy",
+      "important": true
+    },
+    {
+      "id": "2",
+      "content": "Browser can execute only JavaScript",
+      "important": false
+    },
+    {
+      "id": "3",
+      "content": "GET and POST are the most important methods of HTTP protocol",
+      "important": true
+    }
+  ]
+}
+You can start the JSON Server without a separate installation by running the following npx command in the root directory of the application:
+
+npx json-server --port 3001 db.json
+The JSON Server starts running on port 3000 by default, but we will now define an alternate port 3001. Let's navigate to the address http://localhost:3001/notes in the browser. We can see that JSON Server serves the notes we previously wrote to the file in JSON format:
+
+notes on json format in the browser at localhost:3001/notes
+If your browser doesn't have a way to format the display of JSON-data, then install an appropriate plugin, e.g. JSONView to make your life easier.
+
+Going forward, the idea will be to save the notes to the server, which in this case means saving them to the json-server. The React code fetches the notes from the server and renders them to the screen. Whenever a new note is added to the application, the React code also sends it to the server to make the new note persist in "memory".
+
+json-server stores all the data in the db.json file, which resides on the server. In the real world, data would be stored in some kind of database. However, json-server is a handy tool that enables the use of server-side functionality in the development phase without the need to program any of it.
+
+We will get familiar with the principles of implementing server-side functionality in more detail in part 3 of this course.
+*/
+/**/
+/**/
 
 
 
@@ -87,7 +867,7 @@ const App = (props) => {
   const [showAll, setShowAll] = useState(true)
   
   // ...
-}copy
+}
 Let's change the component so that it stores a list of all the notes to be displayed in the notesToShow variable. The items on the list depend on the state of the component:
 
 import { useState } from 'react'
@@ -115,25 +895,25 @@ const App = (props) => {
       // ...
     </div>
   )
-}copy
+}
 The definition of the notesToShow variable is rather compact:
 
 const notesToShow = showAll
   ? notes
-  : notes.filter(note => note.important === true)copy
+  : notes.filter(note => note.important === true)
 The definition uses the conditional operator also found in many other programming languages.
 
 The operator functions as follows. If we have:
 
-const result = condition ? val1 : val2copy
+const result = condition ? val1 : val2
 the result variable will be set to the value of val1 if condition is true. If condition is false, the result variable will be set to the value ofval2.
 
 If the value of showAll is false, the notesToShow variable will be assigned to a list that only contains notes that have the important property set to true. Filtering is done with the help of the array filter method:
 
-notes.filter(note => note.important === true)copy
+notes.filter(note => note.important === true)
 The comparison operator is redundant, since the value of note.important is either true or false, which means that we can simply write:
 
-notes.filter(note => note.important)copy
+notes.filter(note => note.important)
 We showed the comparison operator first to emphasize an important detail: in JavaScript val1 == val2 does not always work as expected. When performing comparisons, it's therefore safer to exclusively use val1 === val2. You can read more about the topic here.
 
 You can test out the filtering functionality by changing the initial value of the showAll state.
@@ -168,16 +948,16 @@ const App = (props) => {
       // ...    
     </div>
   )
-}copy
+}
 The displayed notes (all versus important) are controlled with a button. The event handler for the button is so simple that it has been defined directly in the attribute of the button element. The event handler switches the value of showAll from true to false and vice versa:
 
-() => setShowAll(!showAll)copy
+() => setShowAll(!showAll)
 The text of the button depends on the value of the showAll state:
 
-show {showAll ? 'important' : 'all'}copy
+show {showAll ? 'important' : 'all'}
 You can find the code for our current application in its entirety in the part2-3 branch of this GitHub repository.
 */
-/**/
+/*
 import { useState } from 'react'
 import Note from './components/Note'
 
@@ -394,7 +1174,7 @@ const App = (props) => {
       </form>   
     </div>
   )
-}copy
+}
 The placeholder text stored as the initial value of the newNote state appears in the input element, but the input text can't be edited. The console displays a warning that gives us a clue as to what might be wrong:
 
 provided value to prop without onchange console error
@@ -432,19 +1212,19 @@ const App = (props) => {
       </form>   
     </div>
   )
-}copy
+}
 We have now registered an event handler to the onChange attribute of the form's input element:
 
 <input
   value={newNote}
   onChange={handleNoteChange}
-/>copy
+/>
 The event handler is called every time a change occurs in the input element. The event handler function receives the event object as its event parameter:
 
 const handleNoteChange = (event) => {
   console.log(event.target.value)
   setNewNote(event.target.value)
-}copy
+}
 The target property of the event object now corresponds to the controlled input element, and event.target.value refers to the input value of that element.
 
 Note that we did not need to call the event.preventDefault() method like we did in the onSubmit event handler. This is because no default action occurs on an input change, unlike a form submission.
@@ -467,17 +1247,17 @@ const addNote = (event) => {
 
   setNotes(notes.concat(noteObject))
   setNewNote('')
-}copy
+}
 First, we create a new object for the note called noteObject that will receive its content from the component's newNote state. The unique identifier id is generated based on the total number of notes. This method works for our application since notes are never deleted. With the help of the Math.random() function, our note has a 50% chance of being marked as important.
 
 The new note is added to the list of notes using the concat array method, introduced in part 1:
 
-setNotes(notes.concat(noteObject))copy
+setNotes(notes.concat(noteObject))
 The method does not mutate the original notes array, but rather creates a new copy of the array with the new item added to the end. This is important since we must never mutate state directly in React!
 
 The event handler also resets the value of the controlled input element by calling the setNewNote function of the newNote state:
 
-setNewNote('')copy
+setNewNote('')
 You can find the code for our current application in its entirety in the part2-2 branch of this GitHub repository.
 */
 /*
@@ -622,14 +1402,14 @@ const App = (props) => {
   )
 }
 
-export default App copy
+export default App 
 The component uses the useState function to initialize the piece of state stored in notes with the array of notes passed in the props:
 
 const App = (props) => { 
   const [notes, setNotes] = useState(props.notes) 
 
   // ...
-}copy
+}
 We can also use React Developer Tools to see that this really happens:
 
 browser showing dev react tools window
@@ -639,7 +1419,7 @@ const App = () => {
   const [notes, setNotes] = useState([]) 
 
   // ...
-}  copy
+}  
 Let's stick with the initial value passed in the props for the time being.
 
 Next, let's add an HTML form to the component that will be used for adding new notes.
@@ -666,7 +1446,7 @@ const App = (props) => {
       </form>   
     </div>
   )
-}copy
+}
 We have added the addNote function as an event handler to the form element that will be called when the form is submitted, by clicking the submit button.
 
 We use the method discussed in part 1 for defining our event handler:
@@ -674,7 +1454,7 @@ We use the method discussed in part 1 for defining our event handler:
 const addNote = (event) => {
   event.preventDefault()
   console.log('button clicked', event.target)
-}copy
+}
 The event parameter is the event that triggers the call to the event handler function:
 
 The event handler immediately calls the event.preventDefault() method, which prevents the default action of submitting a form. The default action would, among other things, cause the page to reload.
@@ -849,7 +1629,7 @@ const App = () => {
       <Course course={course} />
     </div>
   )
-}copy
+}
 We'll hone in on the reason for the breakdown by adding console.log commands to the code. Because the first thing to be rendered is the App component, it's worth putting the first console.log there:
 
 const App = () => {
@@ -862,7 +1642,7 @@ const App = () => {
   return (
     // ..
   )
-}copy
+}
 To see the printing in the console, we must scroll up over the long red wall of errors.
 
 initial printing of the console
@@ -872,7 +1652,7 @@ const Course = ({ course }) => (
   <div>
     <Header course={course} />
   </div>
-)copy
+)
 The component should be changed to its longer form for us to add the printing:
 
 const Course = ({ course }) => { 
@@ -882,7 +1662,7 @@ const Course = ({ course }) => {
       <Header course={course} />
     </div>
   )
-}copy
+}
 Quite often the root of the problem is that the props are expected to be of a different type, or called with a different name than they actually have, and destructuring fails as a result. The problem often begins to solve itself when destructuring is removed and we see what the props contain.
 
 const Course = (props) => {
@@ -893,7 +1673,7 @@ const Course = (props) => {
       <Header course={course} />
     </div>
   )
-}copy
+}
 If the problem has still not been resolved, sadly there isn't much to do apart from continuing to bug-hunt by sprinkling more console.log statements around your code.
 
 I added this chapter to the material after the model answer for the next question exploded completely (due to props being of the wrong type), and I had to debug it using console.log.
@@ -1007,7 +1787,7 @@ const App = ({ notes }) => {
       </ul>
     </div>
   )
-}copy
+}
 If you have forgotten what destructuring means and how it works, please review the section on destructuring.
 
 We'll separate displaying a single note into its own component Note:
@@ -1029,7 +1809,7 @@ const App = ({ notes }) => {
       </ul>
     </div>
   )
-}copy
+}
 Note that the key attribute must now be defined for the Note components, and not for the li tags like before.
 
 A whole React application can be written in a single file. Although that is, of course, not very practical. Common practice is to declare each component in its own file as an ES6-module.
@@ -1037,7 +1817,7 @@ A whole React application can be written in a single file. Although that is, of 
 We have been using modules the whole time. The first few lines of the file main.jsx:
 
 import ReactDOM from "react-dom/client"
-import App from "./App"copy
+import App from "./App"
 import two modules, enabling them to be used in that file. The module react-dom/client is placed into the variable ReactDOM, and the module that defines the main component of the app is placed into the variable App
 
 Let's move our Note component into its own module.
@@ -1050,14 +1830,14 @@ src/
 └── components/           # Folder for reusable components
     ├── Footer.jsx        # File named after the component
     ├── Note.jsx
-    └── Notification.jsxcopy
+    └── Notification.jsx
 Now, we'll create a directory called components for our application and place a file named Note.jsx inside. The contents of the file are as follows:
 
 const Note = ({ note }) => {
   return <li>{note.content}</li>
 }
 
-export default Notecopy
+export default Note
 The last line of the module exports the declared module, the variable Note.
 
 Now the file that is using the component - App.jsx - can import the module:
@@ -1066,12 +1846,12 @@ import Note from './components/Note'
 
 const App = ({ notes }) => {
   // ...
-}copy
+}
 The component exported by the module is now available for use in the variable Note, just as it was earlier.
 
 Note that when importing our own components, their location must be given in relation to the importing file:
 
-'./components/Note'copy
+'./components/Note'
 The period - . - in the beginning refers to the current directory, so the module's location is a file called Note.jsx in the components sub-directory of the current directory. The filename extension .jsx can be omitted.
 
 Modules have plenty of other uses other than enabling component declarations to be separated into their own files. We will get back to them later in this course.
@@ -1147,7 +1927,7 @@ export default App
 Anti-pattern: Array Indexes as Keys
 We could have made the error message on our console disappear by using the array indexes as keys. The indexes can be retrieved by passing a second parameter to the callback function of the map method:
 
-notes.map((note, i) => ...)copy
+notes.map((note, i) => ...)
 When called like this, i is assigned the value of the index of the position in the array where the note resides.
 
 As such, one way to define the row generation without getting errors is:
@@ -1158,7 +1938,7 @@ As such, one way to define the row generation without getting errors is:
       {note.content}
     </li>
   )}
-</ul>copy
+</ul>
 This is, however, not recommended and can create undesired problems even if it seems to be working just fine.
 
 Read more about this in this article.
@@ -1237,28 +2017,28 @@ const notes = [
     content: 'GET and POST are the most important methods of HTTP protocol',
     important: true
   }
-]copy
+]
 Let's pause for a moment and examine how map works.
 
 If the following code is added to, let's say, the end of the file:
 
 const result = notes.map(note => note.id)
-console.log(result)copy
+console.log(result)
 [1, 2, 3] will be printed to the console. map always creates a new array, the elements of which have been created from the elements of the original array by mapping: using the function given as a parameter to the map method.
 
 The function is
 
-note => note.idcopy
+note => note.id
 Which is an arrow function written in compact form. The full form would be:
 
 (note) => {
   return note.id
-}copy
+}
 The function gets a note object as a parameter and returns the value of its id field.
 
 Changing the command to:
 
-const result = notes.map(note => note.content)copy
+const result = notes.map(note => note.content)
 will give you an array containing the contents of the notes.
 
 This is already pretty close to the React code we used:
@@ -1267,12 +2047,12 @@ notes.map(note =>
   <li key={note.id}>
     {note.content}
   </li>
-)copy
+)
 which generates an li tag containing the contents of the note from each note object.
 
 Because the function parameter passed to the map method -
 
-note => <li key={note.id}>{note.content}</li>copy
+note => <li key={note.id}>{note.content}</li>
  - is used to create view elements, the value of the variable must be rendered inside curly braces. Try to see what happens if the braces are removed.
 
 The use of curly braces will cause some pain in the beginning, but you will get used to them soon enough. The visual feedback from React is immediate.
@@ -1359,7 +2139,7 @@ const App = (props) => {
       </ul>
     </div>
   )
-}copy
+}
 And the error message disappears.
 
 React uses the key attributes of objects in an array to determine how to update the view generated by a component when the component is re-rendered. More about this is in the React documentation.
@@ -1446,7 +2226,7 @@ const App = (props) => {
   )
 }
 
-export default Appcopy
+export default App
 The file main.jsx looks like this:
 
 import ReactDOM from 'react-dom/client'
@@ -1472,24 +2252,24 @@ const notes = [
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <App notes={notes} />
-)copy
+)
 Every note contains its textual content, a boolean value for marking whether the note has been categorized as important or not, and also a unique id.
 
 The example above works due to the fact that there are exactly three notes in the array.
 
 A single note is rendered by accessing the objects in the array by referring to a hard-coded index number:
 
-<li>{notes[1].content}</li>copy
+<li>{notes[1].content}</li>
 This is, of course, not practical. We can improve on this by generating React elements from the array objects using the map function.
 
-notes.map(note => <li>{note.content}</li>)copy
+notes.map(note => <li>{note.content}</li>)
 The result is an array of li elements.
 
 [
   <li>HTML is easy</li>,
   <li>Browser can execute only JavaScript</li>,
   <li>GET and POST are the most important methods of HTTP protocol</li>,
-]copy
+]
 Which can then be placed inside ul tags:
 
 const App = (props) => {
@@ -1503,7 +2283,7 @@ const App = (props) => {
       </ul>
     </div>
   )
-}copy
+}
 Because the code generating the li tags is JavaScript, it must be wrapped in curly braces in a JSX template just like all other JavaScript code.
 
 We will also make the code more readable by separating the arrow function's declaration across multiple lines:
@@ -1585,13 +2365,13 @@ When something does not work, don't just guess what's wrong. Instead, log or use
 
 NB As explained in part 1, when you use the command console.log for debugging, don't concatenate things 'the Java way' with a plus. Instead of writing:
 
-console.log('props value is ' + props)copy
+console.log('props value is ' + props)
 separate the things to be printed with a comma:
 
-console.log('props value is', props)copy
+console.log('props value is', props)
 If you concatenate an object with a string and log it to the console (like in our first example), the result will be pretty useless:
 
-props value is [object Object]copy
+props value is [object Object]
 On the contrary, when you pass objects as distinct arguments separated by commas to console.log, like in our second example above, the content of the object is printed to the developer console as strings that are insightful. If necessary, read more about debugging React applications.
 
 
@@ -1616,7 +2396,7 @@ The most important snippet is the one for the console.log() command, for example
     ],
     "description": "Log output to console"
   }
-}copy
+}
 Debugging your code using console.log() is so common that Visual Studio Code has that snippet built in. To use it, type log and hit Tab to autocomplete. More fully featured console.log() snippet extensions can be found in the marketplace.
 
 
