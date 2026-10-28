@@ -13,9 +13,46 @@
 /**/
 /**/
 /**/
+
+
+/*
+The development runtime environment
+The configuration for the whole application has steadily grown more complex. Let's review what happens and where. The following image describes the makeup of the application
+
+diagram of composition of react app
+The JavaScript code making up our React application is run in the browser. The browser gets the JavaScript from the React dev server, which is the application that runs after running the command npm run dev. The dev-server transforms the JavaScript into a format understood by the browser. Among other things, it stitches together JavaScript from different files into one file. We'll discuss the dev-server in more detail in part 7 of the course.
+
+The React application running in the browser fetches the JSON formatted data from json-server running on port 3001 on the machine. The server we query the data from - json-server - gets its data from the file db.json.
+
+At this point in development, all the parts of the application happen to reside on the software developer's machine, otherwise known as localhost. The situation changes when the application is deployed to the internet. We will do this in part 3.
+*/
+/*
+no code
 /**/
-/**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Effect-hooks
@@ -159,8 +196,8 @@ The React application running in the browser fetches the JSON formatted data fro
 
 At this point in development, all the parts of the application happen to reside on the software developer's machine, otherwise known as localhost. The situation changes when the application is deployed to the internet. We will do this in part 3.
 */
-/**/
-//UseEfeect WTF pero esto que es
+/*
+//UseEfeect
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Note from './components/Note'
@@ -170,29 +207,56 @@ const App = () => {
   const [newNote, setNewNote] = useState('')
   const [showAll, setShowAll] = useState(true)
 
-  useEffect(() => {
-    console.log('effect')
+  useEffect(()=>{
     axios
       .get('http://localhost:3001/notes')
-      .then(response => {
+      .then( (response) => {
         console.log('promise fulfilled')
         setNotes(response.data)
       })
-  }, [])//Esto se ejecuta una sola vez componentDidMount
-  console.log('render', notes.length, 'notes')
+  },[])
+  console.log(notes)
+
+  // const hook = () => {
+  //   console.log('effect')
+  //   axios
+  //     .get('http://localhost:3001/notes')
+  //     .then((response) => {
+  //       console.log('promise fulfilled')
+  //       setNotes(response.data)
+  //     })
+  // }
+  // useEffect(hook, [])
+  //console.log(notes)
+
+  // useEffect(() => {
+  //   console.log('effect')
+
+  //   const eventHandler = response => {
+  //     console.log('promise fulfilled')
+  //     setNotes(response.data)
+  //   }
+
+  //   const promise = axios.get('http://localhost:3001/notes')
+  //   promise.then(eventHandler)//The registration of the callback happens by giving the eventHandler variable, referring to the event-handler function, as an argument to the then method of the promise
+  // },[])
+  // console.log(notes)
 
   const addNote = (event) => {
     event.preventDefault()
 
     if(newNote === ''){return}
     else{
-      const noteObject = {content: newNote,important: Math.random() < 0.5,id: String(notes.length + 1),}
+      const noteObject = {
+        content: newNote,
+        important: Math.random() < 0.5,id: 
+        String(notes.length + 1),}
       setNotes(notes.concat(noteObject))
       setNewNote('')
     }
   }
 
-  const handleNoteChange = (event) => setNewNote(event.target.value)
+  const handleNoteChange = event => setNewNote(event.target.value)
 
   const notesToShow = showAll
     ? notes
@@ -217,7 +281,391 @@ const App = () => {
 }
 export default App
 /**/
+/*
+//// Los 3 metodos para actualizar estado Array con objetos F*CKKK
+Método	                  ¿Funciona?	¿Modifica el array original?
+[...users, nuevo]	        Sí	        No
+users.concat(nuevo)	      Sí	        No
+prev => [...prev, nuevo]	Sí(Mejor) 	No
 
+Qué debes recordar para trabajar en React:
+- ... Toma un array y devuelve: a,b,c,d,e,
+- ...array → copiar los elementos de un array.
+- [...prev, nuevo] → agregar al final.
+- [nuevo, ...prev] → agregar al principio.
+- concat(nuevo) → crear otro array con elementos adicionales.
+- map() → transformar o actualizar elementos.
+- filter() → eliminar elementos según una condición.
+- Evita push(), pop(), splice() y otros métodos mutables directamente sobre el estado.
+
+La idea fundamental es tratar el estado como inmutable: crear un nuevo array cuando necesites cambiarlo, en vez de modificar el que ya existe.
+
+1. Cuando SÍ usar prev => ...
+Úsala cuando necesites consultar el estado anterior para calcular el siguiente.
+
+Agregar un objeto
+setUsers(prev => [...prev, newUser]);
+
+Eliminar un objeto
+setUsers(prev => prev.filter(user => user.id !== id));
+
+Modificar un objeto
+setUsers(prev =>
+  prev.map(user =>
+    user.id === id
+      ? { ...user, name: "Pedro" }
+      : user
+  )
+);
+
+Alternar un booleano
+setIsOpen(prev => !prev);
+
+En todos estos casos, el resultado depende del valor anterior del estado.
+
+/**/
+//SAME CODE BUT ADDING NOTES IN SERVER AXIOS.POST
+/*
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import Note from './components/Note'
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  useEffect(() => {
+    console.log('effect')
+    axios.get('http://localhost:3001/notes').then((response) => {
+      console.log('promise fulfilled')
+      setNotes(response.data)
+    })
+  }, [])
+  console.log('render', notes.length, 'notes')
+
+  const addNote = (event) => {
+    event.preventDefault()
+
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5,
+    }
+    console.log('axios.post')
+    axios.post('http://localhost:3001/notes', noteObject)
+      .then(response => {
+        (console.log('response status created: ',response), console.log('response.data: ',response.data))
+        setNotes(prev => prev.concat(response.data))
+        setNewNote('')
+      })
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+  
+  const notesToShow = showAll ? notes : notes.filter((note) => note.important)
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map((note) => (
+          <Note key={note.id} note={note} />
+        ))}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} />
+        <button type="submit">save</button>
+      </form>
+    </div>
+  )
+}
+
+export default App
+/**/
+//EX TO DO APP BASIC
+/*
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+
+const App = () => {
+  const [activities, setActivities] = useState([])
+  const [newTask, setNewTask] = useState('')
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:3001/activities')
+      .then(res => setActivities(res.data))
+  },[])
+  
+  const changeTask = (event) => setNewTask(event.target.value)
+  const changeCheck = (activity) => {
+    const updatedActivity = {...activity, done: !activity.done}
+    axios
+      .patch(`http://localhost:3001/activities/${activity.id}`,
+        { done: updatedActivity.done }
+      )
+      .then(res => 
+        setActivities(prev => 
+          prev.map((obj) =>
+            obj.id === activity.id ?
+            res.data :
+            obj
+          )
+        )
+      )
+  }
+
+  const deleteActivity = (activity) => 
+    axios
+      .delete(`http://localhost:3001/activities/${activity.id}`)
+      .then(res => 
+        setActivities(prev =>
+          prev.filter(obj => 
+            obj.id !== activity.id)
+        )
+      )
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+
+    if(!newTask.trim())return
+    const newActivity = {task:newTask, done:false}
+    axios
+      .post('http://localhost:3001/activities', newActivity)
+      .then(res => 
+        setActivities(prev => 
+          [...prev,res.data]//prev.concat(response.data) opcion 2
+        )
+      )
+    setNewTask('')
+  }
+
+  return(
+    <>
+    <h1>To Do</h1>
+    
+    <form onSubmit={handleSubmit}>
+      <input type="text" value={newTask} onChange={changeTask} />
+      <button type='submit'>Add</button>
+    </form>
+
+    <br></br>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Table</th>
+          <th>Done</th>
+        </tr>
+      </thead>
+      <tbody>
+          {activities.map((activity) => 
+          <tr key={activity.id}>
+            <td>{activity.task}</td>
+            <td><input 
+              type="checkbox" 
+              checked={activity.done} 
+              onChange={() => changeCheck(activity)}/>
+            </td>
+            <td>
+              <button onClick={() => deleteActivity(activity)}>Delete</button>
+            </td>
+          </tr>)}
+      </tbody>
+    </table>
+    
+    </>
+  )
+}
+export default App
+/**/
+////ChatGPT enterprise correction WTF O.o
+/**/
+
+import { useEffect, useState } from 'react'
+import axios from 'axios'
+
+const API_URL = 'http://localhost:3001/activities'
+
+const App = () => {
+  const [activities, setActivities] = useState([])
+  const [newTask, setNewTask] = useState('')
+
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [busyActivityId, setBusyActivityId] = useState(null)
+  const [error, setError] = useState('')
+
+  // Obtener las actividades al montar el componente
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const response = await axios.get(API_URL)
+        setActivities(response.data)
+      } catch (err) {
+        setError('No se pudieron cargar las actividades.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchActivities()
+  }, [])
+
+  // Crear una actividad
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+
+    const task = newTask.trim()
+
+    if (!task || creating) return
+
+    setCreating(true)
+    setError('')
+
+    try {
+      const response = await axios.post(API_URL, {
+        task,
+        done: false,
+      })
+
+      setActivities((prev) => [...prev, response.data])
+      setNewTask('')
+    } catch (err) {
+      setError('No se pudo crear la actividad. Inténtalo de nuevo.')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  // Cambiar el estado de una actividad
+  const changeCheck = async (activity) => {
+    if (busyActivityId !== null) return
+
+    setBusyActivityId(activity.id)
+    setError('')
+
+    try {
+      const response = await axios.patch(
+        `${API_URL}/${activity.id}`,
+        { done: !activity.done }
+      )
+
+      setActivities((prev) =>
+        prev.map((item) =>
+          item.id === activity.id ? response.data : item
+        )
+      )
+    } catch (err) {
+      setError('No se pudo actualizar la actividad.')
+    } finally {
+      setBusyActivityId(null)
+    }
+  }
+
+  // Eliminar una actividad
+  const deleteActivity = async (activity) => {
+    if (busyActivityId !== null) return
+
+    setBusyActivityId(activity.id)
+    setError('')
+
+    try {
+      await axios.delete(`${API_URL}/${activity.id}`)
+
+      setActivities((prev) =>
+        prev.filter((item) => item.id !== activity.id)
+      )
+    } catch (err) {
+      setError('No se pudo eliminar la actividad.')
+    } finally {
+      setBusyActivityId(null)
+    }
+  }
+
+  return (
+    <main>
+      <h1>To Do</h1>
+
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="new-task">Nueva actividad</label>
+
+        <input
+          id="new-task"
+          type="text"
+          value={newTask}
+          onChange={(event) => setNewTask(event.target.value)}
+          placeholder="Ej. Hacer ejercicio"
+          disabled={creating}
+        />
+
+        <button type="submit" disabled={creating || !newTask.trim()}>
+          {creating ? 'Añadiendo...' : 'Añadir'}
+        </button>
+      </form>
+
+      {error && <p role="alert">{error}</p>}
+
+      {loading ? (
+        <p>Cargando actividades...</p>
+      ) : activities.length === 0 ? (
+        <p>No hay actividades todavía. ¡Añade la primera!</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Actividad</th>
+              <th scope="col">Completada</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {activities.map((activity) => {
+              const isBusy = busyActivityId === activity.id
+
+              return (
+                <tr key={activity.id}>
+                  <td>{activity.task}</td>
+
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(activity.done)}
+                      onChange={() => changeCheck(activity)}
+                      disabled={busyActivityId !== null}
+                      aria-label={`Marcar ${activity.task} como completada`}
+                    />
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => deleteActivity(activity)}
+                      disabled={busyActivityId !== null}
+                      aria-label={`Eliminar ${activity.task}`}
+                    >
+                      {isBusy ? 'Procesando...' : 'Eliminar'}
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+    </main>
+  )
+}
+
+export default App
+
+/**/
 
 
 
@@ -1277,7 +1725,7 @@ const App = (props) => {
       console.log('button clicked', event.target)
       const noteObject = {content: newNote,important: Math.random() < 0.5,id: String(notes.length + 1),}
       setNotes(notes.concat(noteObject))
-      //Como yo lo hize lpm
+      //Como yo lo hize lpm el mejor te lo juro (LO ES)
       //setNotes((prev)=>[...prev, {id:(prev[prev.length-1].id+1),content:newNote,important:true}])
       setNewNote('')
 

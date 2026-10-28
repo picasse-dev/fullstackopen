@@ -39,7 +39,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 
 
-///// original solo se importa create root, no todo reactDOM 
+///// original solo se importa createRoot, no todo reactDOM 
 // import { StrictMode } from 'react'
 // import { createRoot } from 'react-dom/client'
 // import './index.css'
