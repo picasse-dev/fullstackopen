@@ -1,4 +1,182 @@
 /*
+Exercise 2.11.
+2.11: The Phonebook Step 6
+We continue with developing the phonebook. Store the initial state of the application in the file db.json, which should be placed in the root of the project.
+
+{
+  "persons":[
+    { 
+      "name": "Arto Hellas", 
+      "number": "040-123456",
+      "id": "1"
+    },
+    { 
+      "name": "Ada Lovelace", 
+      "number": "39-44-5323523",
+      "id": "2"
+    },
+    { 
+      "name": "Dan Abramov", 
+      "number": "12-43-234345",
+      "id": "3"
+    },
+    { 
+      "name": "Mary Poppendieck", 
+      "number": "39-23-6423122",
+      "id": "4"
+    }
+  ]
+}
+Start json-server on port 3001 and make sure that the server returns the list of people by going to the address http://localhost:3001/persons in the browser.
+
+If you receive the following error message:
+
+events.js:182
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE 0.0.0.0:3001
+    at Object._errnoException (util.js:1019:11)
+    at _exceptionWithHostPort (util.js:1041:20)
+it means that port 3001 is already in use by another application, e.g. in use by an already running json-server. Close the other application, or change the port in case that doesn't work.
+
+Modify the application such that the initial state of the data is fetched from the server using the axios-library. Complete the fetching with an Effect hook.
+*/
+//Revisar si se puede simplificar
+/**/
+import { useState, useEffect } from 'react'
+import Filter from './Components/Filter'
+import PersonForm from './Components/PersonForm'
+import Persons from './Components/Persons'
+import axios from 'axios'
+
+
+const normalizeNumber = (number) =>
+  number.replace(/[\s-]/g, '')
+
+const App = () => {
+  const [persons, setPersons] = useState([])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [word, setWord] = useState('')
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:3001/persons')
+      .then(res => 
+        setPersons(res.data)
+      )
+  },[])
+  
+  const handleChangeName = (e) => setNewName(e.target.value)
+  const handleChangeNumber = (e) => setNewNumber(e.target.value)
+  const handleChangeWord = (e) => setWord(e.target.value)
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const name = newName.trim()
+    const number = newNumber.trim()
+
+    if (!name || !number) return
+
+    const personExists = persons.some(
+        (person) => person.name.toLowerCase() === name.toLowerCase()
+      )
+      
+    if (personExists) {
+      alert(`${newName} is already added`)
+      return
+    }
+
+    const numberExists = persons.some(
+      (person) => 
+        normalizeNumber(person.number) === normalizeNumber(number)
+    )
+
+    if (numberExists) {
+      alert(`${number} is already added`)
+      return
+    }
+
+    setPersons((prev) => [
+      ...prev, 
+      {
+        name, 
+        number, 
+        id: prev.length > 0 ?
+        Math.max(...prev.map( p => p.id)) + 1:
+        1,
+      }
+    ])
+    setNewName('')
+    setNewNumber('')
+  }
+
+  const searchWord = word.trim().toLowerCase()
+
+  const filteredPersons = persons.filter((el) => 
+    el.name.toLowerCase().includes(searchWord))
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+
+      <Filter value={word} onChange={handleChangeWord}/>
+
+      <h2>Add a new</h2>
+
+      <PersonForm
+        onSubmit={handleSubmit}
+        valueName={newName}
+        onChangeName={handleChangeName}
+        valueNumber={newNumber}
+        onChangeNumber={handleChangeNumber}
+      />
+
+      <h2>Numbers</h2>
+
+      <Persons filteredPersons={filteredPersons}/>
+    </>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 2.10: The Phonebook Step 5
 If you have implemented your application in a single component, refactor it by extracting suitable parts into new components. Maintain the application's state and all event handlers in the App root component.
 
@@ -26,10 +204,10 @@ const App = () => {
       <Persons ... />
     </div>
   )
-}copy
+}
 NB: You might run into problems in this exercise if you define your components "in the wrong place". Now would be a good time to rehearse the chapter do not define a component in another component from the last part.
 */
-/**/
+/*
 import { useState } from 'react'
 import Filter from './Components/Filter'
 import PersonForm from './Components/PersonForm'
@@ -390,7 +568,7 @@ const App = () => {
   ])
 
   // ...
-}copy
+}
 This saves you from having to manually input data into your application for testing out your new functionality.
 /**/
 /*
@@ -609,7 +787,7 @@ Expand your application by allowing users to add phone numbers to the phone book
   <div>name: <input /></div>
   <div>number: <input /></div>
   <div><button type="submit">add</button></div>
-</form>copy
+</form>
 At this point, the application could look something like this. The image also displays the application's state with the help of React developer tools:
 
 2.8 sample screenshot
@@ -756,13 +934,13 @@ Issue a warning with the alert command when such an action is attempted:
 browser alert: "user already exists in the phonebook"
 Hint: when you are forming strings that contain values from variables, it is recommended to use a template string:
 
-`${newName} is already added to phonebook`copy
+`${newName} is already added to phonebook`
 If the newName variable holds the value Arto Hellas, the template string expression returns the string
 
-`Arto Hellas is already added to phonebook`copy
+`Arto Hellas is already added to phonebook`
 The same could be done in a more Java-like fashion by using the plus operator:
 
-newName + ' is already added to phonebook'copy
+newName + ' is already added to phonebook'
 Using template strings is the more idiomatic option and the sign of a true JavaScript professional.
 
 
@@ -916,12 +1094,12 @@ const App = () => {
   )
 }
 
-export default Appcopy
+export default App
 The newName state is meant for controlling the form input element.
 
 Sometimes it can be useful to render state and other variables as text for debugging purposes. You can temporarily add the following element to the rendered component:
 
-<div>debug: {newName}</div>copy
+<div>debug: {newName}</div>
 It's also important to put what we learned in the debugging React applications chapter of part one into good use. The React developer tools extension is incredibly useful for tracking changes that occur in the application's state.
 
 After finishing this exercise your application should look something like this:
