@@ -4,19 +4,1489 @@
 /**/
 /**/
 /**/
+
 /**/
 /**/
 /**/
+
 /**/
 /**/
 /**/
+
+/**/
+/**/
+/**/
+
+/**/
+/**/
+/**/
+
+/**/
+/**/
+/**/
+
+
+/**/
+/**/
+/**/
+
+/**/
+/**/
+/**/
+
+/**/
+/**/
+/**/
+
+/**/
+/**/
+/**/
+
+/*
+Promises and Errors
+If our application allowed users to delete notes, we could end up in a situation where a user tries to change the importance of a note that has already been deleted from the system.
+
+Let's simulate this situation by making the getAll function of the note service return a "hardcoded" note that does not actually exist on the backend server:
+
+const getAll = () => {
+  const request = axios.get(baseUrl)
+  const nonExisting = {
+    id: 10000,
+    content: 'This note is not saved to server',
+    important: true,
+  }
+  return request.then(response => response.data.concat(nonExisting))
+}copy
+When we try to change the importance of the hardcoded note, we see the following error message in the console. The error says that the backend server responded to our HTTP PUT request with a status code 404 not found.
+
+404 not found error in dev tools
+The application should be able to handle these types of error situations gracefully. Users won't be able to tell that an error has occurred unless they happen to have their console open. The only way the error can be seen in the application is that clicking the button does not affect the note's importance.
+
+We had previously mentioned that a promise can be in one of three different states. When an axios HTTP request fails, the associated promise is rejected. Our current code does not handle this rejection in any way.
+
+The rejection of a promise is handled by providing the then method with a second callback function, which is called in the situation where the promise is rejected.
+
+The more common way of adding a handler for rejected promises is to use the catch method.
+
+In practice, the error handler for rejected promises is defined like this:
+
+axios
+  .get('http://example.com/probably_will_fail')
+  .then(response => {
+    console.log('success!')
+  })
+  .catch(error => {
+    console.log('fail')
+  })copy
+If the request fails, the event handler registered with the catch method gets called.
+
+The catch method is often utilized by placing it deeper within the promise chain.
+
+When multiple .then methods are chained together, we are in fact creating a promise chain:
+
+axios
+  .get('http://...')
+  .then(response => response.data)
+  .then(data => {
+    // ...
+  })copy
+The catch method can be used to define a handler function at the end of a promise chain, which is called once any promise in the chain throws an error and the promise becomes rejected.
+
+axios
+  .get('http://...')
+  .then(response => response.data)
+  .then(data => {
+    // ...
+  })
+  .catch(error => {
+    console.log('fail')
+  })copy
+Let's take advantage of this feature. We will place our application's error handler in the App component:
+
+const toggleImportanceOf = id => {
+  const note = notes.find(n => n.id === id)
+  const changedNote = { ...note, important: !note.important }
+
+  noteService
+    .update(id, changedNote).then(returnedNote => {
+      setNotes(notes.map(note => note.id === id ? returnedNote : note))
+    })
+    .catch(error => {
+      alert(
+        `the note '${note.content}' was already deleted from server`
+      )
+      setNotes(notes.filter(n => n.id !== id))
+    })
+}copy
+The error message is displayed to the user with the trusty old alert dialog popup, and the deleted note gets filtered out from the state.
+
+Removing an already deleted note from the application's state is done with the array filter method, which returns a new array comprising only the items from the list for which the function that was passed as a parameter returns true for:
+
+notes.filter(n => n.id !== id)copy
+It's probably not a good idea to use alert in more serious React applications. We will soon learn a more advanced way of displaying messages and notifications to users. There are situations, however, where a simple, battle-tested method like alert can function as a starting point. A more advanced method could always be added in later, given that there's time and energy for it.
+
+The code for the current state of our application can be found in the part2-6 branch on GitHub.
+*/
+/*
+import { useState, useEffect } from 'react'
+import Note2 from './components/Note2'//USING NOTE2.JSX
+import noteService from './services/notes'
+
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)
+      })
+  }, [])
+
+  const toggleImportance = id => {
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+
+    noteService
+      .update(id, changedNote)
+      .then(returnedNote => {
+        setNotes(notes.map(note =>
+           note.id === id ? 
+           returnedNote : 
+           note))
+    })
+  }
+  
+  const addNote = (event) => {
+    event.preventDefault()
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5,
+    }
+
+    noteService
+      .create(noteObject)
+      .then(returnedNote => {
+        setNotes(notes.concat(returnedNote))
+        setNewNote('')
+      })
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+  
+  const notesToShow = showAll ? notes : notes.filter((note) => note.important)
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map((note) => (
+          <Note2 key={note.id} note={note} fun={() => toggleImportance(note.id)}/>
+        ))}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} />
+        <button type="submit">save</button>
+      </form>
+    </div>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Cleaner Syntax for Defining Object Literals
+The module defining note-related services currently exports an object with the properties getAll, create, and update that are assigned to functions for handling notes.
+
+The module definition was:
+
+import axios from 'axios'
+const baseUrl = 'http://localhost:3001/notes'
+
+const getAll = () => {
+  const request = axios.get(baseUrl)
+  return request.then(response => response.data)
+}
+
+const create = newObject => {
+  const request = axios.post(baseUrl, newObject)
+  return request.then(response => response.data)
+}
+
+const update = (id, newObject) => {
+  const request = axios.put(`${baseUrl}/${id}`, newObject)
+  return request.then(response => response.data)
+}
+
+export default { 
+  getAll: getAll, 
+  create: create, 
+  update: update 
+}copy
+The module exports the following, rather peculiar looking, object:
+
+{ 
+  getAll: getAll, 
+  create: create, 
+  update: update 
+}copy
+The labels to the left of the colon in the object definition are the keys of the object, whereas the ones to the right of it are variables that are defined inside the module.
+
+Since the names of the keys and the assigned variables are the same, we can write the object definition with a more compact syntax:
+
+{ 
+  getAll, 
+  create, 
+  update 
+}copy
+As a result, the module definition gets simplified into the following form:
+
+import axios from 'axios'
+const baseUrl = 'http://localhost:3001/notes'
+
+const getAll = () => {
+  const request = axios.get(baseUrl)
+  return request.then(response => response.data)
+}
+
+const create = newObject => {
+  const request = axios.post(baseUrl, newObject)
+  return request.then(response => response.data)
+}
+
+const update = (id, newObject) => {
+  const request = axios.put(`${baseUrl}/${id}`, newObject)
+  return request.then(response => response.data)
+}
+
+export default { getAll, create, update }
+copy
+In defining the object using this shorter notation, we make use of a new feature that was introduced to JavaScript through ES6, enabling a slightly more compact way of defining objects using variables.
+
+To demonstrate this feature, let's consider a situation where we have the following values assigned to variables:
+
+const name = 'Leevi'
+const age = 0copy
+In older versions of JavaScript we had to define an object like this:
+
+const person = {
+  name: name,
+  age: age
+}copy
+However, since both the property fields and the variable names in the object are the same, it's enough to simply write the following in ES6 JavaScript:
+
+const person = { name, age }copy
+The result is identical for both expressions. They both create an object with a name property with the value Leevi and an age property with the value 0.
+*/
+/**/
+//Just changed notes.js to a more cleaner syntax for defining object literals
+/**/
+//Aprovecho para modularizar aqui mi TO DO APP
+/*
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import activities from './services/activities'
+
+const App = () => {
+  const [activities, setActivities] = useState([])
+  const [newTask, setNewTask] = useState('')
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:3001/activities')
+      .then(res => setActivities(res.data))
+    },[])
+    
+  const changeTask = (event) => setNewTask(event.target.value)
+    
+  const handleSubmit = (event) => {
+    event.preventDefault()
+
+    if(!newTask.trim())return
+    const newActivity = {task:newTask, done:false}
+    axios
+      .post('http://localhost:3001/activities', newActivity)
+      .then(res => {
+        setActivities(prev => 
+          [...prev,res.data]
+        )
+        setNewTask('')
+      })
+  }
+
+  const changeCheck = (id) => {
+    const activity = activities.find(obj => obj.id === id)
+    const updatedActivity = {...activity, done: !activity.done}
+    axios
+      .patch(`http://localhost:3001/activities/${id}`,
+        { done: updatedActivity.done }
+      )
+      .then(res => 
+        setActivities(prev => 
+          prev.map((obj) =>
+            obj.id === activity.id ?
+            res.data :
+            obj
+          )
+        )
+      )
+  }
+
+  const deleteActivity = (id) => {
+    axios
+      .delete(`http://localhost:3001/activities/${id}`)
+      .then(res => 
+        setActivities(prev =>
+          prev.filter(obj => 
+            obj.id !== res.data.id)
+        )
+      )
+  }
+
+  const editActivity = (id) => console.log('isEditing')
+
+
+  return(
+    <>
+    <h1>To Do</h1>
+    
+    <form onSubmit={handleSubmit}>
+      <input type="text" value={newTask} onChange={changeTask} />
+      <button type='submit'>Add</button>
+    </form>
+
+    <br></br>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Table</th>
+          <th>Done</th>
+        </tr>
+      </thead>
+      <tbody>
+          {activities.map((activity) => 
+          <tr key={activity.id}>
+            <td>{activity.task}</td>
+            <td><input 
+              type="checkbox" 
+              checked={activity.done} 
+              onChange={() => changeCheck(activity.id)}/>
+            </td>
+            <td>
+              <button onClick={() => deleteActivity(activity.id)}>Delete</button>
+            </td>
+            <td>
+              <button onClick={() => editActivity(activity.id)}>Edit</button>
+            </td>
+          </tr>)}
+      </tbody>
+    </table>
+    
+    </>
+  )
+}
+export default App
+//Modularizar componentes, axios
+/**/
+//OLD CHAT GPT CORRECTION TO DO APP V1
+/** */
+import { useEffect, useRef, useState } from 'react';
+
+function TaskItem({ task, onEdit, onDelete }) {
+  return (
+    <li>
+      <span>{task.title}</span>{' '}
+
+      <button
+        type="button"
+        onClick={() => onEdit(task)}
+        aria-label={`Editar tarea: ${task.title}`}
+      >
+        Editar
+      </button>{' '}
+
+      <button
+        type="button"
+        onClick={() => onDelete(task.id)}
+        aria-label={`Eliminar tarea: ${task.title}`}
+      >
+        Eliminar
+      </button>
+    </li>
+  );
+}
+
+export default function App() {
+  const [tasks, setTasks] = useState([]);
+  const [title, setTitle] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState(null);
+
+  const inputRef = useRef(null);
+  const isEditing = editingTaskId !== null;
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+    }
+  }, [isEditing]);
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) return;
+
+    if (isEditing) {
+      setTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === editingTaskId
+            ? { ...task, title: trimmedTitle }
+            : task
+        )
+      );
+    } else {
+      const newTask = {
+        id: crypto.randomUUID(),
+        title: trimmedTitle,
+      };
+
+      setTasks((currentTasks) => [
+        ...currentTasks,
+        newTask,
+      ]);
+    }
+
+    cancelEditing();
+  };
+
+  const startEditing = (task) => {
+    setEditingTaskId(task.id);
+    setTitle(task.title);
+  };
+
+  const cancelEditing = () => {
+    setEditingTaskId(null);
+    setTitle('');
+  };
+
+  const deleteTask = (id) => {
+    setTasks((currentTasks) =>
+      currentTasks.filter((task) => task.id !== id)
+    );
+
+    if (editingTaskId === id) {
+      cancelEditing();
+    }
+  };
+
+  return (
+    <main>
+      <h1>Lista de tareas</h1>
+
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="task-title">
+          {isEditing ? 'Editar tarea ' : 'Nueva tarea '}
+        </label>
+
+        <input
+          ref={inputRef}
+          id="task-title"
+          type="text"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Escribe una tarea..."
+          maxLength={200}
+        />
+
+        <button type="submit">
+          {isEditing ? 'Guardar cambios' : 'Agregar tarea'}
+        </button>
+
+        {isEditing && (
+          <button type="button" onClick={cancelEditing}>
+            Cancelar
+          </button>
+        )}
+      </form>
+
+      <h2>Tareas ({tasks.length})</h2>
+
+      {tasks.length === 0 ? (
+        <p>No hay tareas todavía. ¡Agrega la primera!</p>
+      ) : (
+        <ul>
+          {tasks.map((task) => (
+            <TaskItem
+              key={task.id}
+              task={task}
+              onEdit={startEditing}
+              onDelete={deleteTask}
+            />
+          ))}
+        </ul>
+      )}
+    </main>
+  );
+}
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Extracting Communication with the Backend into a Separate Module
+The App component has become somewhat bloated after adding the code for communicating with the backend server. In the spirit of the single responsibility principle, we deem it wise to extract this communication into its own module.
+
+Let's create a src/services directory and add a file there called notes.js:
+
+import axios from 'axios'
+const baseUrl = 'http://localhost:3001/notes'
+
+const getAll = () => {
+  return axios.get(baseUrl)
+}
+
+const create = newObject => {
+  return axios.post(baseUrl, newObject)
+}
+
+const update = (id, newObject) => {
+  return axios.put(`${baseUrl}/${id}`, newObject)
+}
+
+export default { 
+  getAll: getAll, 
+  create: create, 
+  update: update 
+}copy
+The module returns an object that has three functions (getAll, create, and update) as its properties that deal with notes. The functions directly return the promises returned by the axios methods.
+
+The App component uses import to get access to the module:
+
+import noteService from './services/notes'
+
+const App = () => {copy
+The functions of the module can be used directly with the imported variable noteService as follows:
+
+const App = () => {
+  // ...
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(response => {
+        setNotes(response.data)
+      })
+  }, [])
+
+  const toggleImportanceOf = id => {
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+
+    noteService
+      .update(id, changedNote)
+      .then(response => {
+        setNotes(notes.map(note => note.id === id ? response.data : note))
+      })
+  }
+
+  const addNote = (event) => {
+    event.preventDefault()
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5
+    }
+
+    noteService
+      .create(noteObject)
+      .then(response => {
+        setNotes(notes.concat(response.data))
+        setNewNote('')
+      })
+  }
+
+  // ...
+}
+
+export default Appcopy
+We could take our implementation a step further. When the App component uses the functions, it receives an object that contains the entire response for the HTTP request:
+
+noteService
+  .getAll()
+  .then(response => {
+    setNotes(response.data)
+  })copy
+The App component only uses the response.data property of the response object.
+
+The module would be much nicer to use if, instead of the entire HTTP response, we would only get the response data. Using the module would then look like this:
+
+noteService
+  .getAll()
+  .then(initialNotes => {
+    setNotes(initialNotes)
+  })copy
+We can achieve this by changing the code in the module as follows (the current code contains some copy-paste, but we will tolerate that for now):
+
+import axios from 'axios'
+const baseUrl = 'http://localhost:3001/notes'
+
+const getAll = () => {
+  const request = axios.get(baseUrl)
+  return request.then(response => response.data)
+}
+
+const create = newObject => {
+  const request = axios.post(baseUrl, newObject)
+  return request.then(response => response.data)
+}
+
+const update = (id, newObject) => {
+  const request = axios.put(`${baseUrl}/${id}`, newObject)
+  return request.then(response => response.data)
+}
+
+export default { 
+  getAll: getAll, 
+  create: create, 
+  update: update 
+}copy
+We no longer return the promise returned by axios directly. Instead, we assign the promise to the request variable and call its then method:
+
+const getAll = () => {
+  const request = axios.get(baseUrl)
+  return request.then(response => response.data)
+}copy
+The last row in our function is simply a more compact expression of the same code as shown below:
+
+const getAll = () => {
+  const request = axios.get(baseUrl)
+  return request.then(response => {
+    return response.data
+  })
+}copy
+The modified getAll function still returns a promise, as the then method of a promise also returns a promise.
+
+After defining the parameter of the then method to directly return response.data, we have gotten the getAll function to work like we wanted it to. When the HTTP request is successful, the promise returns the data sent back in the response from the backend.
+
+We have to update the App component to work with the changes made to our module. We have to fix the callback functions given as parameters to the noteService object's methods so that they use the directly returned response data:
+
+const App = () => {
+  // ...
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)
+      })
+  }, [])
+
+  const toggleImportanceOf = id => {
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+
+    noteService
+      .update(id, changedNote)
+      .then(returnedNote => {
+        setNotes(notes.map(note => note.id === id ? returnedNote : note))
+      })
+  }
+
+  const addNote = (event) => {
+    event.preventDefault()
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5
+    }
+
+    noteService
+      .create(noteObject)
+      .then(returnedNote => {
+        setNotes(notes.concat(returnedNote))
+        setNewNote('')
+      })
+  }
+
+  // ...
+}copy
+This is all quite complicated and attempting to explain it may just make it harder to understand. The internet is full of material discussing the topic, such as this one.
+
+The "Async and performance" book from the You do not know JS book series explains the topic well, but the explanation is many pages long.
+
+Promises are central to modern JavaScript development and it is highly recommended to invest a reasonable amount of time into understanding them.
+*/
+/*
+import { useState, useEffect } from 'react'
+import Note2 from './components/Note2'//USING NOTE2.JSX
+import noteService from './services/notes'
+
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)
+      })
+  }, [])
+
+  const toggleImportance = id => {
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+
+    noteService
+      .update(id, changedNote)
+      .then(returnedNote => {
+        setNotes(notes.map(note =>
+           note.id === id ? 
+           returnedNote : 
+           note))
+    })
+  }
+  
+  const addNote = (event) => {
+    event.preventDefault()
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5,
+    }
+
+    noteService
+      .create(noteObject)
+      .then(returnedNote => {
+        setNotes(notes.concat(returnedNote))
+        setNewNote('')
+      })
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+  
+  const notesToShow = showAll ? notes : notes.filter((note) => note.important)
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map((note) => (
+          <Note2 key={note.id} note={note} fun={() => toggleImportance(note.id)}/>
+        ))}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} />
+        <button type="submit">save</button>
+      </form>
+    </div>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Changing the Importance of Notes
+Let's add a button to every note that can be used for toggling its importance.
+
+We make the following changes to the Note component:
+
+const Note = ({ note, toggleImportance }) => {
+  const label = note.important
+    ? 'make not important' : 'make important'
+
+  return (
+    <li>
+      {note.content} 
+      <button onClick={toggleImportance}>{label}</button>
+    </li>
+  )
+}copy
+We add a button to the component and assign its event handler as the toggleImportance function passed in the component's props.
+
+The App component defines an initial version of the toggleImportanceOf event handler function and passes it to every Note component:
+
+const App = () => {
+  const [notes, setNotes] = useState([]) 
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  // ...
+
+  const toggleImportanceOf = (id) => {
+    console.log('importance of ' + id + ' needs to be toggled')
+  }
+
+  // ...
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all' }
+        </button>
+      </div>      
+      <ul>
+        {notesToShow.map(note => 
+          <Note
+            key={note.id}
+            note={note} 
+            toggleImportance={() => toggleImportanceOf(note.id)}
+          />
+        )}
+      </ul>
+      // ...
+    </div>
+  )
+}copy
+Notice how every note receives its own unique event handler function since the id of every note is unique.
+
+E.g., if note.id is 3, the event handler function returned by toggleImportance(note.id) will be:
+
+() => { console.log('importance of 3 needs to be toggled') }copy
+A short reminder here. The string printed by the event handler is defined in a Java-like manner by adding the strings:
+
+console.log('importance of ' + id + ' needs to be toggled')copy
+The template string syntax added in ES6 can be used to write similar strings in a much nicer way:
+
+console.log(`importance of ${id} needs to be toggled`)copy
+We can now use the "dollar-bracket"-syntax to add parts to the string that will evaluate JavaScript expressions, e.g. the value of a variable. Note that we use backticks in template strings instead of quotation marks used in regular JavaScript strings.
+
+Individual notes stored in the json-server backend can be modified in two different ways by making HTTP requests to the note's unique URL. We can either replace the entire note with an HTTP PUT request or only change some of the note's properties with an HTTP PATCH request.
+
+The final form of the event handler function is the following:
+
+const toggleImportanceOf = id => {
+  const url = `http://localhost:3001/notes/${id}`
+  const note = notes.find(n => n.id === id)
+  const changedNote = { ...note, important: !note.important }
+
+  axios.put(url, changedNote).then(response => {
+    setNotes(notes.map(note => note.id === id ? response.data : note))
+  })
+}copy
+Almost every line of code in the function body contains important details. The first line defines the unique URL for each note resource based on its id.
+
+The array find method is used to find the note we want to modify, and we then assign it to the note variable.
+
+After this, we create a new object that is an exact copy of the old note, apart from the important property that has the value flipped (from true to false or from false to true).
+
+The code for creating the new object that uses the object spread syntax may seem a bit strange at first:
+
+const changedNote = { ...note, important: !note.important }copy
+In practice, { ...note } creates a new object with copies of all the properties from the note object. When we add properties inside the curly braces after the spread object, e.g. { ...note, important: true }, then the value of the important property of the new object will be true. In our example, the important property gets the negation of its previous value in the original object.
+
+There are a few things to point out. Why did we make a copy of the note object we wanted to modify when the following code also appears to work?
+
+const note = notes.find(n => n.id === id)
+note.important = !note.important
+
+axios.put(url, note).then(response => {
+  // ...copy
+This is not recommended because the variable note is a reference to an item in the notes array in the component's state, and as we recall we must never mutate state directly in React.
+
+It's also worth noting that the new object changedNote is only a so-called shallow copy, meaning that the values of the new object are the same as the values of the old object. If the values of the old object were objects themselves, then the copied values in the new object would reference the same objects that were in the old object.
+
+The new note is then sent with a PUT request to the backend where it will replace the old object.
+
+The callback function sets the component's notes state to a new array that contains all the items from the previous notes array, except for the old note which is replaced by the updated version of it returned by the server:
+
+axios.put(url, changedNote).then(response => {
+  setNotes(notes.map(note => note.id === id ? response.data : note))
+})copy
+This is accomplished with the map method:
+
+notes.map(note => note.id === id ? response.data : note)copy
+The map method creates a new array by mapping every item from the old array into an item in the new array. In our example, the new array is created conditionally so that if note.id === id is true; the note object returned by the server is added to the array. If the condition is false, then we simply copy the item from the old array into the new array instead.
+
+This map trick may seem a bit strange at first, but it's worth spending some time wrapping your head around it. We will be using this method many times throughout the course.
+*/
+/*
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import Note2 from './components/Note2'
+//USING NOTE2.JSX
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  useEffect(() => {
+    console.log('effect')
+    axios
+      .get('http://localhost:3001/notes')
+      .then((response) => {
+        console.log('promise fulfilled')
+        setNotes(response.data)
+    })
+  }, [])
+  console.log('render', notes.length, 'notes')
+
+  const addNote = (event) => {
+    event.preventDefault()
+
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5,
+    }
+    console.log('axios.post')
+    axios
+      .post('http://localhost:3001/notes', noteObject)
+      .then(response => {
+        (console.log('response status created: ',response), console.log('response.data: ',response.data))
+        setNotes(prev => prev.concat(response.data))
+        setNewNote('')
+      })
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+  
+  const notesToShow = showAll ? notes : notes.filter((note) => note.important)
+
+  const toggleImportance = id => {
+    const url = `http://localhost:3001/notes/${id}`
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+
+    axios.put(url, changedNote).then(response => {
+      setNotes(notes.map(note => note.id === id ? response.data : note)) //Aquí utilizas notes, que viene del estado capturado cuando se creó o ejecutó la función. Si ocurren varias actualizaciones muy seguidas, podrías trabajar con un valor desactualizado es mejor prev=>prev.map etc.
+    })
+  }
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map((note) => (
+          <Note2 key={note.id} note={note} fun={() => toggleImportance(note.id)}/>
+        ))}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} />
+        <button type="submit">save</button>
+      </form>
+    </div>
+  )
+}
+export default App
+/**/
+/*
+//PUT VS PATCH, put manda todo el objeto, patch solo la propiedad del objeto a cambiar, ambas devuelven todo el objeto que se modifico. F*CKKK 6647
+
+const toggleImportance = id => {
+  const url = `http://localhost:3001/notes/${id}`
+  const note = notes.find(n => n.id === id)
+  const changedNote = { ...note, important: !note.important }
+
+  axios.put(url, changedNote).then(response => {
+    setNotes(notes.map(note => note.id === id ? response.data : note)) //Aquí utilizas notes, que viene del estado capturado cuando se creó o ejecutó la función. Si ocurren varias actualizaciones muy seguidas, podrías trabajar con un valor desactualizado.
+  })
+}
+
+const toggleImportance = (id) => {
+  const note = notes.find(n => n.id === id)
+
+  axios
+    .patch(`http://localhost:3001/notes/${id}`, {
+      important: !note.important
+    })
+    .then(response => {
+      setNotes(prev =>
+        prev.map(n => n.id === id ? response.data : n)
+      )
+    })
+}
+
+////Ahora... pasarle todo el objeto notes a toggleImportance no es tan buena practica?
+
+Opción A: pasar solo el id (la que tienes ahora y es mejor)
+const toggleImportanceOf = (id) => {
+  const note = notes.find(n => n.id === id)
+  // ...
+}
+
+La llamas así:
+<Note
+  note={note}
+  toggleImportance={() => toggleImportanceOf(note.id)}
+/>
+
+Ventajas:
+- Pasas un dato pequeño y concreto.
+- La función busca la nota en el estado que tiene disponible.
+- La interfaz queda desacoplada de la lógica que actualiza los datos.
+Es perfectamente válida para el ejercicio de Full Stack Open.
+
+Opción B: pasar la nota completa
+const toggleImportanceOf = (note) => {
+  const changedNote = {
+    ...note,
+    important: !note.important
+  }
+
+  // petición Axios...
+}
+
+La llamada sería:
+<Note
+  note={note}
+  toggleImportance={() => toggleImportanceOf(note)}
+/>
+
+También es válida. De hecho, tiene una ventaja: no necesitas buscar la nota con find() porque ya la recibes.
+
+Pero hay un detalle: la nota recibida puede estar desactualizada si el estado ha cambiado desde que se creó esa referencia. Para una aplicación sencilla no suele ser un problema, pero es algo que conviene tener presente.
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Altering data in server
+When creating notes in our application, we would naturally want to store them in some backend server. The json-server package claims to be a so-called REST or RESTful API in its documentation:
+
+Get a full fake REST API with zero coding in less than 30 seconds (seriously)
+
+The json-server does not exactly match the description provided by the textbook definition of a REST API, but neither do most other APIs claiming to be RESTful.
+
+We will take a closer look at REST in the next part of the course. But it's important to familiarize ourselves at this point with some of the conventions used by json-server and REST APIs in general. In particular, we will be taking a look at the conventional use of routes, aka URLs and HTTP request types, in REST.
+
+
+
+REST
+In REST terminology, we refer to individual data objects, such as the notes in our application, as resources. Every resource has a unique address associated with it - its URL. According to a general convention used by json-server, we would be able to locate an individual note at the resource URL notes/3, where 3 is the id of the resource. The notes URL, on the other hand, would point to a resource collection containing all the notes.
+
+Resources are fetched from the server with HTTP GET requests. For instance, an HTTP GET request to the URL notes/3 will return the note that has the id number 3. An HTTP GET request to the notes URL would return a list of all notes.
+
+Creating a new resource for storing a note is done by making an HTTP POST request to the notes URL according to the REST convention that the json-server adheres to. The data for the new note resource is sent in the body of the request.
+
+json-server requires all data to be sent in JSON format. What this means in practice is that the data must be a correctly formatted string and that the request must contain the Content-Type request header with the value application/json.
+
+
+
+Sending Data to the Server
+Let's make the following changes to the event handler responsible for creating a new note:
+
+const addNote = event => {
+  event.preventDefault()
+  const noteObject = {
+    content: newNote,
+    important: Math.random() < 0.5,
+  }
+
+  axios
+    .post('http://localhost:3001/notes', noteObject)
+    .then(response => {
+      console.log(response)
+    })
+}copy
+We create a new object for the note but omit the id property since it's better to let the server generate ids for our resources.
+
+The object is sent to the server using the axios post method. The registered event handler logs the response that is sent back from the server to the console.
+
+When we try to create a new note, the following output pops up in the console:
+
+data json output in console
+The newly created note resource is stored in the value of the data property of the response object.
+
+Quite often it is useful to inspect HTTP requests in the Network tab of Chrome developer tools, which was used heavily at the beginning of part 0.
+
+We can use the inspector to check that the headers sent in the POST request are what we expected them to be:
+
+dev tools header shows 201 created for localhost:3001/notes
+Since the data we sent in the POST request was a JavaScript object, axios automatically knew to set the appropriate application/json value for the Content-Type header.
+
+The tab payload can be used to check the request data:
+
+devtools payload tab shows content and important fields from above
+Also the tab response is useful, it shows what was the data the server responded with:
+
+devtools response tab shows same content as payload but with id field too
+The new note is not rendered to the screen yet. This is because we did not update the state of the App component when we created it. Let's fix this:
+
+const addNote = event => {
+  event.preventDefault()
+  const noteObject = {
+    content: newNote,
+    important: Math.random() > 0.5,
+  }
+
+  axios
+    .post('http://localhost:3001/notes', noteObject)
+    .then(response => {
+      setNotes(notes.concat(response.data))
+      setNewNote('')
+    })
+}copy
+The new note returned by the backend server is added to the list of notes in our application's state in the customary way of using the setNotes function and then resetting the note creation form. An important detail to remember is that the concat method does not change the component's original state, but instead creates a new copy of the list.
+
+Once the data returned by the server starts to have an effect on the behavior of our web applications, we are immediately faced with a whole new set of challenges arising from, for instance, the asynchronicity of communication. This necessitates new debugging strategies, console logging and other means of debugging become increasingly more important. We must also develop a sufficient understanding of the principles of both the JavaScript runtime and React components. Guessing won't be enough.
+
+It's beneficial to inspect the state of the backend server, e.g. through the browser:
+
+JSON data output from backend
+This makes it possible to verify that all the data we intended to send was actually received by the server.
+
+In the next part of the course, we will learn to implement our own logic in the backend. We will then take a closer look at tools like Postman that helps us to debug our server applications. However, inspecting the state of the json-server through the browser is sufficient for our current needs.
+
+The code for the current state of our application can be found in the part2-5 branch on GitHub.
+*/
+/*
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import Note from './components/Note'
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  useEffect(() => {
+    console.log('effect')
+    axios
+      .get('http://localhost:3001/notes')
+      .then((response) => {
+        console.log('promise fulfilled')
+        setNotes(response.data)
+    })
+  }, [])
+  console.log('render', notes.length, 'notes')
+
+  const addNote = (event) => {
+    event.preventDefault()
+
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5,
+    }
+    console.log('axios.post')
+    axios
+      .post('http://localhost:3001/notes', noteObject)
+      .then(response => {
+        (console.log('response status created: ',response), console.log('response.data: ',response.data))
+        setNotes(prev => prev.concat(response.data))
+        setNewNote('')
+      })
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+  
+  const notesToShow = showAll ? notes : notes.filter((note) => note.important)
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map((note) => (
+          <Note key={note.id} note={note} />
+        ))}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} />
+        <button type="submit">save</button>
+      </form>
+    </div>
+  )
+}
+export default App
+/**/
+////CONTENT TYPE Since the data we sent in the POST request was a JavaScript object, axios automatically knew to set the appropriate application/json value for the Content-Type header. JSON
+/*
+En un header HTTP, Content-Type indica qué tipo de contenido estás enviando en el cuerpo (body) de una petición o respuesta. Hay varios valores posibles, dependiendo de si envías JSON, texto, archivos, imágenes, etc.
+
+1. Tipos de Content-Type más comunes
+Content-Type	¿Para qué sirve?	Ejemplo
+application/json	Enviar datos JSON a una API	{"name":"Sebastián"}
+application/x-www-form-urlencoded	Enviar datos de formularios como pares clave-valor	name=Sebastian&age=25
+multipart/form-data	Subir archivos y enviar campos de formulario	Imagen + nombre
+text/plain	Enviar texto sin formato especial	Hola mundo
+text/html	Enviar documentos HTML	<h1>Hola</h1>
+text/css	Enviar hojas de estilos CSS	body { color: red; }
+text/javascript	Enviar código JavaScript	console.log("Hola")
+application/xml	Enviar datos XML	<user><name>Ana</name></user>
+application/pdf	Enviar un documento PDF	Archivo PDF
+application/octet-stream	Enviar datos binarios genéricos	Archivo binario
+image/jpeg	Enviar una imagen JPEG	Fotografía
+image/png	Enviar una imagen PNG	Imagen con transparencia
+image/webp	Enviar una imagen WebP	Imagen optimizada
+audio/mpeg	Enviar audio MP3	Archivo de audio
+video/mp4	Enviar video MP4	Archivo de video
+
+2. Ejemplos en peticiones HTTP
+Enviar JSON a una API
+POST /api/users HTTP/1.1
+Host: example.com
+Content-Type: application/json
+
+{
+  "name": "Sebastián",
+  "age": 25
+}
+
+
+Enviar un formulario tradicional
+POST /login HTTP/1.1
+Host: example.com
+Content-Type: application/x-www-form-urlencoded
+
+username=sebas&password=12345
+
+
+Subir una imagen
+POST /upload HTTP/1.1
+Host: example.com
+Content-Type: multipart/form-data; boundary=----abc123
+
+
+En este último caso, el cliente normalmente genera el boundary automáticamente. Por ejemplo, con JavaScript y FormData, no debes establecer manualmente el Content-Type, porque el navegador necesita incluir ese separador.
+
+3. ¿Qué otros headers HTTP deberías conocer?
+No debes confundir Content-Type con otros headers. Estos son algunos de los más importantes:
+Header	Función
+Accept	Indica qué formatos de respuesta acepta el cliente.
+Authorization	Envía credenciales o tokens de autenticación.
+Content-Length	Indica el tamaño del cuerpo en bytes.
+Content-Encoding	Indica si el cuerpo está comprimido, por ejemplo con gzip.
+Cache-Control	Define reglas de almacenamiento en caché.
+User-Agent	Identifica al cliente que realiza la petición.
+Origin	Indica el origen de una petición, relevante para CORS.
+Cookie	Envía cookies al servidor.
+
+4. Diferencia entre Content-Type y Accept
+Esta distinción es especialmente importante al desarrollar APIs con JavaScript, Node.js o Express.
+POST /api/users HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+
+- Content-Type: application/json: estoy enviando JSON al servidor.
+- Accept: application/json: quiero que el servidor me responda con JSON.
+
+Son independientes: puedes enviar JSON y solicitar una respuesta en otro formato, si el servidor lo admite.
+
+Consejo para Full Stack Open: al trabajar con APIs REST, normalmente usarás Content-Type: application/json y Accept: application/json. En fetch(), recuerda que el header Content-Type no convierte automáticamente un objeto JavaScript en JSON: debes serializarlo con JSON.stringify().
+fetch("/api/users", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  },
+  body: JSON.stringify({
+    name: "Sebastián"
+  })
+});
+
+
+Ten presente que Content-Type describe el cuerpo de la petición o respuesta, no el tipo de petición HTTP: GET, POST, PUT, PATCH y DELETE son métodos HTTP.
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*
 Exercise 2.11.
 */
-/**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*
@@ -30,8 +1500,7 @@ The React application running in the browser fetches the JSON formatted data fro
 
 At this point in development, all the parts of the application happen to reside on the software developer's machine, otherwise known as localhost. The situation changes when the application is deployed to the internet. We will do this in part 3.
 */
-/*
-no code
+/**/
 /**/
 
 
@@ -286,7 +1755,7 @@ const App = () => {
 export default App
 /**/
 /*
-//// Los 3 metodos para actualizar estado Array con objetos F*CKKK
+//// Los 3 metodos para actualizar estado Array con objetos F*CKKK 6647
 Método	                  ¿Funciona?	¿Modifica el array original?
 [...users, nuevo]	        Sí	        No
 users.concat(nuevo)	      Sí	        No
@@ -444,6 +1913,7 @@ const App = () => {
       .then(res => 
         setActivities(prev => 
           [...prev,res.data]//prev.concat(response.data) opcion 2
+          //should put the "setNewTask('')" here ? yes
         )
       )
     setNewTask('')
@@ -488,8 +1958,8 @@ const App = () => {
 }
 export default App
 /**/
-////ChatGPT enterprise correction WTF O.o
-/**/
+////ChatGPT enterprise correction del EX TO DO APP BASIC WTF O.o
+/*
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
@@ -666,9 +2136,7 @@ const App = () => {
     </main>
   )
 }
-
 export default App
-
 /**/
 
 
@@ -988,7 +2456,7 @@ npm install json-server --save-devcopy
 There is a fine difference in the parameters. axios is installed as a runtime dependency of the application because the execution of the program requires the existence of the library. On the other hand, json-server was installed as a development dependency (--save-dev), since the program itself doesn't require it. It is used for assistance during software development. There will be more on different dependencies in the next part of the course.
 */
 /**/
-//Json server
+////Json server F*CKKK 6647
 //1) npm install json-server --save-dev
 //2) in packager.json/scripts add:  
 //   "server": "json-server -p 3001 db.json"
@@ -1244,6 +2712,7 @@ json-server stores all the data in the db.json file, which resides on the server
 We will get familiar with the principles of implementing server-side functionality in more detail in part 3 of this course.
 */
 /**/
+
 /**/
 
 
@@ -1289,8 +2758,6 @@ We will get familiar with the principles of implementing server-side functionali
 /*
 Exercises 2.6.-2.10.
 */
-/**/
-/**/
 
 
 
@@ -1306,9 +2773,9 @@ Exercises 2.6.-2.10.
 
 
 
-
+//6647
 /*
-Filtering Displayed Elements
+Filtering Displayed Elements 
 Let's add some new functionality to our application that allows us to only view the important notes.
 
 Let's add a piece of state to the App component that keeps track of which notes should be displayed:
@@ -1995,8 +3462,6 @@ export default App
 /*
 Exercises 2.1.-2.5.
  */
-/**/
-/**/
 
 
 
@@ -2018,6 +3483,7 @@ If my code does not work, I will not write more code. Instead, I start deleting 
 When I ask for help in the course Discord channel or elsewhere I formulate my questions properly, see here how to ask for help
 */
 /**/
+
 /**/
 
 
@@ -2132,6 +3598,7 @@ I added this chapter to the material after the model answer for the next questio
 
 
 */
+//// Super F*CKKK
 /*
 import {useState} from 'react'
 
@@ -2315,6 +3782,7 @@ Note that the main branch of the repository contains the code for a later versio
 GitHub branch screenshot
 If you clone the project, run the command npm install before starting the application with npm run dev.
 */
+////THIS EXAMPLE USES Note.jsx (In the future will existes Note2.jsx)
 /*
 import {useState} from 'react'
 import Note from './components/Note'
@@ -2415,7 +3883,7 @@ const App = (props) => {
       </ul>
     </div>
   )
-  //F*CKK parcialmente, usar la i de la iteracion como key no es recomendable de ltodo, lo mejor siemrpe seran ids
+  //F*CKK parcialmente, usar la i de la iteracion como key no es recomendable del todo, lo mejor siempre seran IDS
 }
 export default App
 /**/
@@ -3862,8 +5330,8 @@ In this course, we have made the slightly radical decision to use hooks exclusiv
 
 We will learn more about React class components later on in the course.
 */
-/*
-nope, no code here
+/**/
+
 /**/
 
 
@@ -4605,7 +6073,7 @@ const App = () => {
 } 
 export default App
 /**/
-//LISTA DE TAREAS
+//LISTA DE TAREAS 66476647
 /*
 import {useState} from 'react'
 
@@ -4620,7 +6088,7 @@ const App = () => {
     const newTask = task.trim()
     if(newTask==="") return
 
-    const updatedListTask = [...taskList,newTask]
+    const updatedListTask = [...taskList, newTask]
     setTaskList(updatedListTask)
     setTask("")
 

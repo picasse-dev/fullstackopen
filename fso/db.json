@@ -3,7 +3,7 @@
     {
       "id": "1",
       "content": "HTML is easy (this shit comes from a server)",
-      "important": true
+      "important": false
     },
     {
       "id": "2",
@@ -13,7 +13,12 @@
     {
       "id": "3",
       "content": "GET and POST are the most important methods of HTTP protocol (And JSON server as a development dependency, to act as our server, so this server runs on port 3001, localhost:3001/notes)",
-      "important": true
+      "important": false
+    },
+    {
+      "content": "a",
+      "important": false,
+      "id": "ITt1rXFx_rE"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
