@@ -330,24 +330,27 @@ The result is identical for both expressions. They both create an object with a 
 /**/
 //Just changed notes.js to a more cleaner syntax for defining object literals
 /**/
-//Aprovecho para modularizar aqui mi TO DO APP
-/*
+////TO DO APP -> Agregar el edit
+/**
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import activities from './services/activities'
+import activitiesService from './services/activities'
 
 const App = () => {
   const [activities, setActivities] = useState([])
   const [newTask, setNewTask] = useState('')
+  const [editedTaskID, setEditedTaskID] = useState('')
+  const [aux, setAux] = useState('')
+
 
   useEffect(() => {
     axios
       .get('http://localhost:3001/activities')
       .then(res => setActivities(res.data))
-    },[])
-    
+    }, [])
+
   const changeTask = (event) => setNewTask(event.target.value)
-    
+
   const handleSubmit = (event) => {
     event.preventDefault()
 
@@ -392,7 +395,34 @@ const App = () => {
       )
   }
 
-  const editActivity = (id) => console.log('isEditing')
+  const editActivity = (id) => {
+    setEditedTaskID(id)
+    const findedTask = activities.find(obj => obj.id === id)
+    setAux(findedTask.task)
+  }
+
+  const handleSave = (id) => {
+    axios
+      .patch(`http://localhost:3001/activities/${id}`, {task:aux})
+      .then(res => {
+        console.log(res.data)
+        setActivities(prev =>
+          prev.map(obj => 
+            obj.id === id ?
+            res.data : // o bien {...obj, task:res.data.task} : //F*CKKK
+            obj
+          )
+        )
+        setAux('')
+        setEditedTaskID('')
+      })
+    
+    
+  }
+  const handleCancel = () => {
+    setAux('')
+    setEditedTaskID('')
+  }
 
 
   return(
@@ -415,20 +445,24 @@ const App = () => {
       </thead>
       <tbody>
           {activities.map((activity) => 
-          <tr key={activity.id}>
-            <td>{activity.task}</td>
-            <td><input 
-              type="checkbox" 
-              checked={activity.done} 
-              onChange={() => changeCheck(activity.id)}/>
-            </td>
-            <td>
-              <button onClick={() => deleteActivity(activity.id)}>Delete</button>
-            </td>
-            <td>
-              <button onClick={() => editActivity(activity.id)}>Edit</button>
-            </td>
-          </tr>)}
+            <tr key={activity.id}>
+              {activity.id===editedTaskID ? 
+                <>
+                  <td><input type="text" value={aux} onChange={(e)=>setAux(e.target.value)}/></td>
+                  <td><input type="checkbox" checked={activity.done} onChange={() => changeCheck(activity.id)}/></td>
+                  <td><button onClick={() => handleSave(activity.id)}>Save</button></td>
+                  <td><button onClick={handleCancel}>Cancel</button></td>
+                </>
+                :
+                <>
+                  <td>{activity.task}</td>
+                  <td><input type="checkbox" checked={activity.done} onChange={() => changeCheck(activity.id)}/></td>
+                  <td><button onClick={() => deleteActivity(activity.id)}>Delete</button></td>
+                  <td><button onClick={() => editActivity(activity.id)}>Edit</button></td>
+                </>
+              }
+            </tr>
+        )}
       </tbody>
     </table>
     
@@ -436,154 +470,214 @@ const App = () => {
   )
 }
 export default App
-//Modularizar componentes, axios
 /**/
-//OLD CHAT GPT CORRECTION TO DO APP V1
-/** */
-import { useEffect, useRef, useState } from 'react';
 
-function TaskItem({ task, onEdit, onDelete }) {
-  return (
-    <li>
-      <span>{task.title}</span>{' '}
+/**/
+////TO DO APP -> Modularizar Componentes (ChatGPT fix: variableNames & Readability spaces & tabs)
 
-      <button
-        type="button"
-        onClick={() => onEdit(task)}
-        aria-label={`Editar tarea: ${task.title}`}
-      >
-        Editar
-      </button>{' '}
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 
-      <button
-        type="button"
-        onClick={() => onDelete(task.id)}
-        aria-label={`Eliminar tarea: ${task.title}`}
-      >
-        Eliminar
-      </button>
-    </li>
-  );
-}
-
-export default function App() {
-  const [tasks, setTasks] = useState([]);
-  const [title, setTitle] = useState('');
-  const [editingTaskId, setEditingTaskId] = useState(null);
-
-  const inputRef = useRef(null);
-  const isEditing = editingTaskId !== null;
+const App = () => {
+  const [activities, setActivities] = useState([])
+  const [newTask, setNewTask] = useState('')
+  const [editingActivityId, setEditingActivityId] = useState(null)
+  const [editedTask, setEditedTask] = useState('')
 
   useEffect(() => {
-    if (isEditing) {
-      inputRef.current?.focus();
-    }
-  }, [isEditing]);
+    axios
+      .get('http://localhost:3001/activities')
+      .then(response => setActivities(response.data))
+  }, [])
+
+  const handleNewTaskChange = (event) => {
+    setNewTask(event.target.value)
+  }
 
   const handleSubmit = (event) => {
-    event.preventDefault();
+    event.preventDefault()
 
-    const trimmedTitle = title.trim();
+    if (!newTask.trim()) return
 
-    if (!trimmedTitle) return;
+    const newActivity = {
+      task: newTask,
+      done: false
+    }
 
-    if (isEditing) {
-      setTasks((currentTasks) =>
-        currentTasks.map((task) =>
-          task.id === editingTaskId
-            ? { ...task, title: trimmedTitle }
-            : task
+    axios
+      .post('http://localhost:3001/activities', newActivity)
+      .then(response => {
+        setActivities(prev => [...prev, response.data])
+        setNewTask('')
+      })
+  }
+
+  const toggleActivityDone = (id) => {
+    const activity = activities.find(activity => activity.id === id)
+
+    if (!activity) return
+
+    const updatedActivity = {
+      done: !activity.done
+    }
+
+    axios
+      .patch(`http://localhost:3001/activities/${id}`, updatedActivity)
+      .then(response => {
+        setActivities(prev =>
+          prev.map(activity =>
+            activity.id === id ? response.data : activity
+          )
         )
-      );
-    } else {
-      const newTask = {
-        id: crypto.randomUUID(),
-        title: trimmedTitle,
-      };
+      })
+  }
 
-      setTasks((currentTasks) => [
-        ...currentTasks,
-        newTask,
-      ]);
-    }
+  const handleDeleteActivity = (id) => {
+    axios
+      .delete(`http://localhost:3001/activities/${id}`)
+      .then(() => {
+        setActivities(prev =>
+          prev.filter(activity => activity.id !== id)
+        )
+      })
+  }
 
-    cancelEditing();
-  };
+  const handleEditActivity = (id) => {
+    const activityToEdit = activities.find(activity => activity.id === id)
 
-  const startEditing = (task) => {
-    setEditingTaskId(task.id);
-    setTitle(task.title);
-  };
+    if (!activityToEdit) return
 
-  const cancelEditing = () => {
-    setEditingTaskId(null);
-    setTitle('');
-  };
+    setEditingActivityId(id)
+    setEditedTask(activityToEdit.task)
+  }
 
-  const deleteTask = (id) => {
-    setTasks((currentTasks) =>
-      currentTasks.filter((task) => task.id !== id)
-    );
+  const handleSaveActivity = (id) => {
+    axios
+      .patch(`http://localhost:3001/activities/${id}`, {
+        task: editedTask
+      })
+      .then(response => {
+        setActivities(prev =>
+          prev.map(activity =>
+            activity.id === id ? response.data : activity // o bien" ?{...obj, task:res.data.task}: "//F*CKKK
+          )
+        )
 
-    if (editingTaskId === id) {
-      cancelEditing();
-    }
-  };
+        setEditedTask('')
+        setEditingActivityId(null)
+      })
+  }
+
+  const handleCancelEdit = () => {
+    setEditingActivityId(null)
+    setEditedTask('')
+  }
 
   return (
-    <main>
-      <h1>Lista de tareas</h1>
+    <>
+      <h1>To Do</h1>
 
       <form onSubmit={handleSubmit}>
-        <label htmlFor="task-title">
-          {isEditing ? 'Editar tarea ' : 'Nueva tarea '}
-        </label>
-
         <input
-          ref={inputRef}
-          id="task-title"
           type="text"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Escribe una tarea..."
-          maxLength={200}
+          value={newTask}
+          onChange={handleNewTaskChange}
         />
-
-        <button type="submit">
-          {isEditing ? 'Guardar cambios' : 'Agregar tarea'}
-        </button>
-
-        {isEditing && (
-          <button type="button" onClick={cancelEditing}>
-            Cancelar
-          </button>
-        )}
+        <button type="submit">Add</button>
       </form>
 
-      <h2>Tareas ({tasks.length})</h2>
+      <br />
 
-      {tasks.length === 0 ? (
-        <p>No hay tareas todavía. ¡Agrega la primera!</p>
-      ) : (
-        <ul>
-          {tasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onEdit={startEditing}
-              onDelete={deleteTask}
-            />
+      <table>
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Done</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {activities.map(activity => (
+            <tr key={activity.id}>
+              {activity.id === editingActivityId ? (
+                <>
+                  <td>
+                    <input
+                      type="text"
+                      value={editedTask}
+                      onChange={event => setEditedTask(event.target.value)}
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={activity.done}
+                      onChange={() => toggleActivityDone(activity.id)}
+                    />
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveActivity(activity.id)}
+                    >
+                      Save
+                    </button>
+                  </td>
+
+                  <td>
+                    <button type="button" onClick={handleCancelEdit}>
+                      Cancel
+                    </button>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td>{activity.task}</td>
+
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={activity.done}
+                      onChange={() => toggleActivityDone(activity.id)}
+                    />
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteActivity(activity.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => handleEditActivity(activity.id)}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </>
+              )}
+            </tr>
           ))}
-        </ul>
-      )}
-    </main>
-  );
+        </tbody>
+      </table>
+    </>
+  )
 }
+
+export default App
+
 /**/
 
-
-
-
+/**/
+////TO DO APP -> Modularizar Axios (En la "Cleaner Syntax for Defining Object Literals")
+/**/
 
 
 
