@@ -7522,3 +7522,8 @@ In traditional web applications, the browser is "dumb". It only fetches HTML dat
 
 Running application logic in the browser:
 */
+
+
+/*
+mientras hago el bootcamp de fsopen, podria ponerme ejercicos tipo ya como aprendiendo lo que se hace en un trabajo real, tipo modificar componentes etc.. cosas asi, si podemos usar repos de github mejor, clonarlos etc..
+*/
