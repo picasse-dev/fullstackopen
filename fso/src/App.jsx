@@ -476,7 +476,87 @@ export default App
 ////TO DO APP -> Modularizar Componentes (ChatGPT fix: variableNames & Readability spaces & tabs)
 
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import activitiesService from './services/activities'
+
+const TaskCreator = ({ handleSubmit, newTask, handleNewTaskChange }) => {
+  return(
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        value={newTask}
+        onChange={handleNewTaskChange}
+      />
+      <button type="submit">Add</button>
+    </form>
+  )
+}
+const ActivityRow = ({ 
+  activity,
+  isEditing,
+  editedTask,
+  handleEditedTaskChange,
+  toggleActivityDone,
+  handleSaveActivity,
+  handleCancelEdit,
+  handleDeleteActivity,
+  handleEditActivity
+}) => {
+  return isEditing
+    ? 
+      <tr>
+        <td><input type="text" value={editedTask} onChange={handleEditedTaskChange}/></td>
+        <td><input type="checkbox" checked={activity.done} onChange={() => toggleActivityDone(activity.id)}/></td>
+        <td><button type="button" onClick={() => handleSaveActivity(activity.id)}>Save</button></td>
+        <td><button type="button" onClick={handleCancelEdit}>Cancel</button></td>
+      </tr>
+    : 
+      <tr>
+        <td>{activity.task}</td>
+        <td><input type="checkbox" checked={activity.done} onChange={() => toggleActivityDone(activity.id)}/> </td>
+        <td><button type="button" onClick={() => handleDeleteActivity(activity.id)}>Delete</button></td>
+        <td><button type="button" onClick={() => handleEditActivity(activity.id)}>Edit</button></td>
+      </tr>
+}
+const ActivityTable = ({
+  activities,
+  editingActivityId,
+  editedTask,
+  handleEditedTaskChange,
+  toggleActivityDone,
+  handleSaveActivity,
+  handleCancelEdit,
+  handleDeleteActivity,
+  handleEditActivity
+}) => {
+  return(
+    <table>
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Done</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {activities.map(activity => (
+          <ActivityRow
+            key={activity.id}
+            activity = {activity}
+            isEditing={activity.id === editingActivityId}
+            editingActivityId = {editingActivityId}
+            editedTask = {editedTask}
+            handleEditedTaskChange = {handleEditedTaskChange}
+            toggleActivityDone = {toggleActivityDone}
+            handleSaveActivity = {handleSaveActivity}
+            handleCancelEdit = {handleCancelEdit}
+            handleDeleteActivity = {handleDeleteActivity}
+            handleEditActivity = {handleEditActivity}
+          />
+        ))}
+      </tbody>
+    </table>
+  )
+}
 
 const App = () => {
   const [activities, setActivities] = useState([])
@@ -485,13 +565,18 @@ const App = () => {
   const [editedTask, setEditedTask] = useState('')
 
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/activities')
-      .then(response => setActivities(response.data))
+    activitiesService
+      .getAll()
+      .then(initialActivities => 
+        setActivities(initialActivities))
   }, [])
 
   const handleNewTaskChange = (event) => {
     setNewTask(event.target.value)
+  }
+
+  const handleEditedTaskChange = (event) => {
+    setEditedTask(event.target.value)
   }
 
   const handleSubmit = (event) => {
@@ -504,10 +589,10 @@ const App = () => {
       done: false
     }
 
-    axios
-      .post('http://localhost:3001/activities', newActivity)
-      .then(response => {
-        setActivities(prev => [...prev, response.data])
+    activitiesService
+      .create(newActivity)
+      .then(returnedActivity => {
+        setActivities(prev => [...prev, returnedActivity])
         setNewTask('')
       })
   }
@@ -518,23 +603,24 @@ const App = () => {
     if (!activity) return
 
     const updatedActivity = {
+      ...activity,
       done: !activity.done
     }
 
-    axios
-      .patch(`http://localhost:3001/activities/${id}`, updatedActivity)
-      .then(response => {
+    activitiesService
+      .updatePut(id, updatedActivity)
+      .then(returnedActivity => {
         setActivities(prev =>
           prev.map(activity =>
-            activity.id === id ? response.data : activity
+            activity.id === id ? returnedActivity : activity
           )
         )
       })
   }
 
   const handleDeleteActivity = (id) => {
-    axios
-      .delete(`http://localhost:3001/activities/${id}`)
+    activitiesService
+      .remove(id)
       .then(() => {
         setActivities(prev =>
           prev.filter(activity => activity.id !== id)
@@ -552,14 +638,14 @@ const App = () => {
   }
 
   const handleSaveActivity = (id) => {
-    axios
-      .patch(`http://localhost:3001/activities/${id}`, {
-        task: editedTask
-      })
-      .then(response => {
+    const updatedActivityProperty = {task: editedTask}
+
+    activitiesService
+      .updatePatch(id, updatedActivityProperty)
+      .then(returnedActivity => {
         setActivities(prev =>
           prev.map(activity =>
-            activity.id === id ? response.data : activity // o bien" ?{...obj, task:res.data.task}: "//F*CKKK
+            activity.id === id ? returnedActivity : activity
           )
         )
 
@@ -577,96 +663,25 @@ const App = () => {
     <>
       <h1>To Do</h1>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={newTask}
-          onChange={handleNewTaskChange}
-        />
-        <button type="submit">Add</button>
-      </form>
+      <TaskCreator 
+        handleSubmit = {handleSubmit} 
+        newTask = {newTask} 
+        handleNewTaskChange = {handleNewTaskChange} 
+      />
 
       <br />
 
-      <table>
-        <thead>
-          <tr>
-            <th>Task</th>
-            <th>Done</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {activities.map(activity => (
-            <tr key={activity.id}>
-              {activity.id === editingActivityId ? (
-                <>
-                  <td>
-                    <input
-                      type="text"
-                      value={editedTask}
-                      onChange={event => setEditedTask(event.target.value)}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={activity.done}
-                      onChange={() => toggleActivityDone(activity.id)}
-                    />
-                  </td>
-
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => handleSaveActivity(activity.id)}
-                    >
-                      Save
-                    </button>
-                  </td>
-
-                  <td>
-                    <button type="button" onClick={handleCancelEdit}>
-                      Cancel
-                    </button>
-                  </td>
-                </>
-              ) : (
-                <>
-                  <td>{activity.task}</td>
-
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={activity.done}
-                      onChange={() => toggleActivityDone(activity.id)}
-                    />
-                  </td>
-
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteActivity(activity.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => handleEditActivity(activity.id)}
-                    >
-                      Edit
-                    </button>
-                  </td>
-                </>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ActivityTable
+        activities = {activities}
+        editingActivityId = {editingActivityId}
+        editedTask = {editedTask}
+        handleEditedTaskChange = {handleEditedTaskChange}
+        toggleActivityDone = {toggleActivityDone}
+        handleSaveActivity = {handleSaveActivity}
+        handleCancelEdit = {handleCancelEdit}
+        handleDeleteActivity = {handleDeleteActivity}
+        handleEditActivity = {handleEditActivity}
+      />
     </>
   )
 }
@@ -674,10 +689,28 @@ const App = () => {
 export default App
 
 /**/
+/*
+F*CKKK
+activitiesService.remove(id)
 
+1. Axios envía la petición DELETE al servidor.
+2. El servidor elimina la actividad.
+3. La Promise se resuelve.
+4. Se ejecuta el .then().
+5. filter() crea un nuevo array sin el elemento cuyo ID es 2.
+6. setActivities() actualiza el estado de React.
+4. ¿Por qué no usamos response.data?
+Porque ya sabemos qué elemento eliminamos: tenemos su id.
+
+No necesitamos que el servidor nos devuelva el objeto eliminado para saber qué quitar del estado local.
+
+Una regla mental útil para Full Stack Open:
+- POST: normalmente utilizas response.data para incorporar el nuevo elemento.
+- PUT/PATCH: normalmente utilizas response.data para actualizar el elemento modificado.
+- DELETE: normalmente puedes utilizar el id que ya tenías para eliminarlo del estado local.
+Una última cosa: si la petición falla, este código no actualizará el estado porque el .then() no se ejecutará. Eso es precisamente lo que queremos. Puedes añadir .catch() para gestionar el error.
 /**/
-////TO DO APP -> Modularizar Axios (En la "Cleaner Syntax for Defining Object Literals")
-/**/
+
 
 
 
@@ -891,6 +924,7 @@ The "Async and performance" book from the You do not know JS book series explain
 
 Promises are central to modern JavaScript development and it is highly recommended to invest a reasonable amount of time into understanding them.
 */
+////6647
 /*
 import { useState, useEffect } from 'react'
 import Note2 from './components/Note2'//USING NOTE2.JSX
