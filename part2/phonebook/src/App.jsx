@@ -1,8 +1,174 @@
 /*
+2.14: The Phonebook step 9
+Make it possible for users to delete entries from the phonebook. The deletion can be done through a dedicated button for each person in the phonebook list. You can confirm the action from the user by using the window.confirm method:
+
+2.17 window confirm feature screeshot
+The associated resource for a person in the backend can be deleted by making an HTTP DELETE request to the resource's URL. If we are deleting e.g. a person who has the id 2, we would have to make an HTTP DELETE request to the URL localhost:3001/persons/2. No data is sent with the request.
+
+You can make an HTTP DELETE request with the axios library in the same way that we make all of the other requests.
+
+NB: You can't use the name delete for a variable because it's a reserved word in JavaScript. E.g. the following is not possible:
+
+// use some other name for variable!
+const delete = (id) => {
+  // ...
+}
+*/
+/**/
+import { useState, useEffect } from 'react'
+import Filter from './Components/Filter'
+import PersonForm from './Components/PersonForm'
+import Persons2 from './Components/Persons2'
+import personsService from './services/persons'
+
+
+const normalizeNumber = (number) =>
+  number.replace(/[\s-]/g, '')
+
+const App = () => {
+  const [persons, setPersons] = useState([])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [word, setWord] = useState('')
+
+  useEffect(() => {
+    personsService
+      .getAll()
+      .then(initialPersons => 
+        setPersons(initialPersons)
+      )
+  },[])
+  
+  const handleChangeName = (e) => setNewName(e.target.value)
+  const handleChangeNumber = (e) => setNewNumber(e.target.value)
+  const handleChangeWord = (e) => setWord(e.target.value)
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const name = newName.trim()
+    const number = newNumber.trim()
+
+    if (!name || !number) return
+
+    const personExists = persons.some(person => 
+      person.name.toLowerCase() === name.toLowerCase()
+    )
+      
+    if (personExists) {
+      alert(`${newName} is already added`)
+      return
+    }
+
+    const numberExists = persons.some(person => 
+        normalizeNumber(person.number) === normalizeNumber(number)
+    )
+
+    if (numberExists) {
+      alert(`${number} is already added`)
+      return
+    }
+
+    const newObject = {
+        name, 
+        number
+      }
+
+    personsService
+      .create(newObject)
+      .then(personCreated => {
+        setPersons(prev =>
+          [...prev, personCreated]
+        )
+        setNewName('')
+        setNewNumber('')
+      })
+  }
+
+  const handleDelete = (id) => {
+    
+    const personToDelete = persons.find(p => p.id === id)
+    if (!personToDelete) return //find() retorna undefined si no halla ID. se arregla con if
+    
+    const wantDelete = window.confirm(`Delete ${personToDelete.name}?`)
+    if(!wantDelete)return
+
+    personsService
+      .remove(id)
+      .then(() => {
+        setPersons(prev =>
+          prev.filter(n => n.id !== id)//F*CKK es "!==", no "==!"
+        )
+      })
+  }
+
+  const searchWord = word.trim().toLowerCase()
+
+  const filteredPersons = persons.filter((el) => 
+    el.name.toLowerCase().includes(searchWord))
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+
+      <Filter value={word} onChange={handleChangeWord}/>
+
+      <h2>Add a new</h2>
+
+      <PersonForm
+        onSubmit={handleSubmit}
+        valueName={newName}
+        onChangeName={handleChangeName}
+        valueNumber={newNumber}
+        onChangeNumber={handleChangeNumber}
+      />
+
+      <h2>Numbers</h2>
+
+      <Persons2 
+      filteredPersons={filteredPersons} 
+      handleDelete={handleDelete}/>
+    </>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 2.13: The Phonebook step 8
 Extract the code that handles the communication with the backend into its own module by following the example shown earlier in this part of the course material.
 */
-/**/
+/*
 import { useState, useEffect } from 'react'
 import Filter from './Components/Filter'
 import PersonForm from './Components/PersonForm'
