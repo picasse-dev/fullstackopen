@@ -1,11 +1,147 @@
 /*
+2.13: The Phonebook step 8
+Extract the code that handles the communication with the backend into its own module by following the example shown earlier in this part of the course material.
+*/
+/**/
+import { useState, useEffect } from 'react'
+import Filter from './Components/Filter'
+import PersonForm from './Components/PersonForm'
+import Persons from './Components/Persons'
+import personsService from './services/persons'
+
+
+const normalizeNumber = (number) =>
+  number.replace(/[\s-]/g, '')
+
+const App = () => {
+  const [persons, setPersons] = useState([])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [word, setWord] = useState('')
+
+  useEffect(() => {
+    personsService
+      .getAll()
+      .then(initialPersons => 
+        setPersons(initialPersons)
+      )
+  },[])
+  
+  const handleChangeName = (e) => setNewName(e.target.value)
+  const handleChangeNumber = (e) => setNewNumber(e.target.value)
+  const handleChangeWord = (e) => setWord(e.target.value)
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const name = newName.trim()
+    const number = newNumber.trim()
+
+    if (!name || !number) return
+
+    const personExists = persons.some(person => 
+      person.name.toLowerCase() === name.toLowerCase()
+    )
+      
+    if (personExists) {
+      alert(`${newName} is already added`)
+      return
+    }
+
+    const numberExists = persons.some(person => 
+        normalizeNumber(person.number) === normalizeNumber(number)
+    )
+
+    if (numberExists) {
+      alert(`${number} is already added`)
+      return
+    }
+
+    const newObject = {
+        name, 
+        number
+      }
+
+    personsService
+      .create(newObject)
+      .then(personCreated => {
+        setPersons(prev =>
+          [...prev, personCreated]
+        )
+        setNewName('')
+        setNewNumber('')
+      })
+  }
+
+  const searchWord = word.trim().toLowerCase()
+
+  const filteredPersons = persons.filter((el) => 
+    el.name.toLowerCase().includes(searchWord))
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+
+      <Filter value={word} onChange={handleChangeWord}/>
+
+      <h2>Add a new</h2>
+
+      <PersonForm
+        onSubmit={handleSubmit}
+        valueName={newName}
+        onChangeName={handleChangeName}
+        valueNumber={newNumber}
+        onChangeNumber={handleChangeNumber}
+      />
+
+      <h2>Numbers</h2>
+
+      <Persons filteredPersons={filteredPersons}/>
+    </>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 Exercises 2.12.-2.15.
 2.12: The Phonebook step 7
 Let's return to our phonebook application.
 
 Currently, the numbers that are added to the phonebook are not saved to a backend server. Fix this situation.
 */
-/**/
+/*
 import { useState, useEffect } from 'react'
 import Filter from './Components/Filter'
 import PersonForm from './Components/PersonForm'

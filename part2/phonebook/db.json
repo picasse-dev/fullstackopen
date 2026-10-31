@@ -24,6 +24,26 @@
       "name": "arto hellass",
       "number": "123456",
       "id": "j2iM9ldCkpQ"
+    },
+    {
+      "name": "a",
+      "number": "1",
+      "id": "j2iM9ldC"
+    },
+    {
+      "name": "aa",
+      "number": "2",
+      "id": "eno-2JEWl0g"
+    },
+    {
+      "name": "aaaa",
+      "number": "23",
+      "id": "eno-2dJEWl0g"
+    },
+    {
+      "name": "asasasa",
+      "number": "asasas",
+      "id": "IRfwahd2lzw"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
