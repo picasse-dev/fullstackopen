@@ -38,9 +38,51 @@
 /**/
 /**/
 
+/*
+Full stack developer's oath
+It is again time for the exercises. The complexity of our app is now increasing since besides just taking care of the React components in the frontend, we also have a backend that is persisting the application data.
+
+To cope with the increasing complexity we should extend the web developer's oath to a Full stack developer's oath, which reminds us to make sure that the communication between frontend and backend happens as expected.
+
+So here is the updated oath:
+
+Full stack development is extremely hard, that is why I will use all the possible means to make it easier
+
+I will have my browser developer console open all the time
+I will use the network tab of the browser dev tools to ensure that frontend and backend are communicating as I expect
+I will constantly keep an eye on the state of the server to make sure that the data sent there by the frontend is saved there as I expect
+I will progress with small steps
+I will write lots of console.log statements to make sure I understand how the code behaves and to help pinpoint problems
+If my code does not work, I will not write more code. Instead, I start deleting the code until it works or just return to a state when everything was still working
+When I ask for help in the course Discord channel or elsewhere I formulate my questions properly, see here how to ask for help
+*/
 /**/
+
 /**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Promises and Errors
@@ -127,7 +169,7 @@ It's probably not a good idea to use alert in more serious React applications. W
 
 The code for the current state of our application can be found in the part2-6 branch on GitHub.
 */
-/*
+/**/
 import { useState, useEffect } from 'react'
 import Note2 from './components/Note2'//USING NOTE2.JSX
 import noteService from './services/notes'
@@ -158,10 +200,17 @@ const App = () => {
            returnedNote : 
            note))
     })
+    .catch(error => {
+      alert(
+        `the note '${note.content}' was already deleted from server`
+      )
+      setNotes(notes.filter(n => n.id !== id))
+    })
   }
   
   const addNote = (event) => {
     event.preventDefault()
+    
     const noteObject = {
       content: newNote,
       important: Math.random() > 0.5,
@@ -472,9 +521,8 @@ const App = () => {
 export default App
 /**/
 
-/**/
+/*
 ////TO DO APP -> Modularizar Componentes (ChatGPT fix: variableNames & Readability spaces & tabs)
-
 import { useState, useEffect } from 'react'
 import activitiesService from './services/activities'
 
@@ -543,7 +591,6 @@ const ActivityTable = ({
             key={activity.id}
             activity = {activity}
             isEditing={activity.id === editingActivityId}
-            editingActivityId = {editingActivityId}
             editedTask = {editedTask}
             handleEditedTaskChange = {handleEditedTaskChange}
             toggleActivityDone = {toggleActivityDone}
@@ -709,6 +756,51 @@ Una regla mental útil para Full Stack Open:
 - PUT/PATCH: normalmente utilizas response.data para actualizar el elemento modificado.
 - DELETE: normalmente puedes utilizar el id que ya tenías para eliminarlo del estado local.
 Una última cosa: si la petición falla, este código no actualizará el estado porque el .then() no se ejecutará. Eso es precisamente lo que queremos. Puedes añadir .catch() para gestionar el error.
+
+Algo que quiero que practiques
+Hay un concepto que acabas de utilizar y que quiero que tengas presente: Props Drilling.
+
+Observa esta cadena:
+App
+ └── ActivityTable
+      └── ActivityRow
+           └── handleDeleteActivity()
+
+
+App le pasa una función a ActivityTable, que a su vez se la pasa a ActivityRow, aunque ActivityTable no la ejecuta.
+
+Eso es precisamente Props Drilling.
+
+No es algo malo. Es una técnica normal de React. Más adelante aprenderás Context API para determinados casos donde pasar props por muchos niveles empieza a ser incómodo.
+
+Lo que ya estás manejando aproximadamente en un 15-20%
+Fundamentos adquiridos
+Concepto	                      Estado
+Componentes funcionales	        Bien
+JSX	                            Bien
+Props	                          Bien
+useState	                      Bien
+useEffect	                      Básico
+Renderizado condicional	        Bien
+Renderizado con map	            Bien
+Actualización inmutable	        Bien
+Eventos	                        Bien
+Comunicación entre componentes	Bien
+Comunicación con APIs (Axios) 	Bien
+CRUD	                          Bien
+
+Lo que todavía te falta explorar
+Área	                    Conceptos
+Hooks	                    useRef, useMemo, useCallback
+Arquitectura	            Custom Hooks, Context API
+Formularios	              Validaciones y manejo de formularios
+Routing	                  React Router
+Estado	                  Reducers, Context y gestión global
+Rendimiento	              Memoización, optimización de renders
+Testing	                  Vitest, React Testing Library
+Ecosistema	              TanStack Query, Zustand
+Frameworks	              Next.js
+Producción	              Build, deployment, autenticación y seguridad
 /**/
 
 
