@@ -1,4 +1,179 @@
 /*
+2.15*: The Phonebook step 10
+Why is there an asterisk in the exercise? See here for the explanation.
+
+Change the functionality so that if a number is added to an already existing user, the new number will replace the old number. It's recommended to use the HTTP PUT method for updating the phone number.
+
+If the person's information is already in the phonebook, the application can ask the user to confirm the action:
+*/
+/**/
+import { useState, useEffect } from 'react'
+import Filter from './Components/Filter'
+import PersonForm from './Components/PersonForm'
+import Persons2 from './Components/Persons2'
+import personsService from './services/persons'
+
+
+const normalizeNumber = (number) =>
+  number.replace(/[\s-]/g, '')
+
+const App = () => {
+  const [persons, setPersons] = useState([])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [word, setWord] = useState('')
+
+  useEffect(() => {
+    personsService
+      .getAll()
+      .then(initialPersons => 
+        setPersons(initialPersons)
+      )
+  },[])
+  
+  const handleChangeName = (e) => setNewName(e.target.value)
+  const handleChangeNumber = (e) => setNewNumber(e.target.value)
+  const handleChangeWord = (e) => setWord(e.target.value)
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const name = newName.trim()
+    const number = newNumber.trim()
+
+    if (!name || !number) return
+
+
+    const personToUpdate = persons.find(person =>
+      person.name.toLowerCase() === name.toLowerCase()
+    )
+
+    const numberOwner = persons.find(person =>
+      normalizeNumber(person.number) === normalizeNumber(number)
+    )
+    //El numero ya existe y lo tiene otra persona
+    if (numberOwner && numberOwner.id !== personToUpdate?.id) {
+      alert(`${number} is already added`)
+      return
+    }
+
+    if (personToUpdate) {
+      if (normalizeNumber(personToUpdate.number) === normalizeNumber(number)) {
+        alert(`${name} already has this number`)
+        return
+      }
+
+      const wantReplace = window.confirm(`${name} is already added to phonebook, replace the old number with a new one?`)
+      if (!wantReplace) return
+
+
+      const updatedObject = { name: personToUpdate.name, number}
+
+      personsService
+        .updatePut(personToUpdate.id, updatedObject)
+        .then(updatedPerson => {
+          setPersons(prev => 
+            prev.map(person =>
+              person.id === updatedPerson.id ? 
+              updatedPerson : 
+              person
+            )
+          )
+          setNewName('')
+          setNewNumber('')
+        })
+      return
+    }
+
+    const newObject = { name, number }
+
+    personsService
+      .create(newObject)
+      .then(personCreated => {
+        setPersons(prev =>
+          [...prev, personCreated])
+        setNewName('')
+        setNewNumber('')
+      })
+  }
+
+  const handleDelete = (id) => {
+    
+    const personToDelete = persons.find(p => p.id === id)
+    if (!personToDelete) return
+    
+    const wantDelete = window.confirm(`Delete ${personToDelete.name}?`)
+    if (!wantDelete) return
+
+    personsService
+      .remove(id)
+      .then(() => {
+        setPersons(prev =>
+          prev.filter(n => n.id !== id)
+        )
+      })
+  }
+
+  const searchWord = word.trim().toLowerCase()
+
+  const filteredPersons = persons.filter((el) => 
+    el.name.toLowerCase().includes(searchWord))
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+
+      <Filter value={word} onChange={handleChangeWord}/>
+
+      <h2>Add a new</h2>
+
+      <PersonForm
+        onSubmit={handleSubmit}
+        valueName={newName}
+        onChangeName={handleChangeName}
+        valueNumber={newNumber}
+        onChangeNumber={handleChangeNumber}
+      />
+
+      <h2>Numbers</h2>
+
+      <Persons2 
+      filteredPersons={filteredPersons} 
+      handleDelete={handleDelete}/>
+    </>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 2.14: The Phonebook step 9
 Make it possible for users to delete entries from the phonebook. The deletion can be done through a dedicated button for each person in the phonebook list. You can confirm the action from the user by using the window.confirm method:
 
@@ -14,7 +189,7 @@ const delete = (id) => {
   // ...
 }
 */
-/**/
+/*
 import { useState, useEffect } from 'react'
 import Filter from './Components/Filter'
 import PersonForm from './Components/PersonForm'
