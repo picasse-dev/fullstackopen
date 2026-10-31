@@ -1,4 +1,151 @@
 /*
+Exercises 2.12.-2.15.
+2.12: The Phonebook step 7
+Let's return to our phonebook application.
+
+Currently, the numbers that are added to the phonebook are not saved to a backend server. Fix this situation.
+*/
+/**/
+import { useState, useEffect } from 'react'
+import Filter from './Components/Filter'
+import PersonForm from './Components/PersonForm'
+import Persons from './Components/Persons'
+import axios from 'axios'
+
+
+const normalizeNumber = (number) =>
+  number.replace(/[\s-]/g, '')
+
+const App = () => {
+  const [persons, setPersons] = useState([])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [word, setWord] = useState('')
+
+  const baseUrl = 'http://localhost:3001/persons'
+  useEffect(() => {
+    axios
+      .get(baseUrl)
+      .then(res => 
+        setPersons(res.data)
+      )
+  },[])
+  
+  const handleChangeName = (e) => setNewName(e.target.value)
+  const handleChangeNumber = (e) => setNewNumber(e.target.value)
+  const handleChangeWord = (e) => setWord(e.target.value)
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const name = newName.trim()
+    const number = newNumber.trim()
+
+    if (!name || !number) return
+
+    const personExists = persons.some(person => 
+      person.name.toLowerCase() === name.toLowerCase()
+    )
+      
+    if (personExists) {
+      alert(`${newName} is already added`)
+      return
+    }
+
+    const numberExists = persons.some(person => 
+        normalizeNumber(person.number) === normalizeNumber(number)
+    )
+
+    if (numberExists) {
+      alert(`${number} is already added`)
+      return
+    }
+
+    const newObject = {
+        name, 
+        number
+      }
+
+    axios
+      .post(baseUrl, newObject)
+      .then(response => {
+        setPersons(prev =>
+          [...prev, response.data]
+        )
+        setNewName('')
+        setNewNumber('')
+      })
+  }
+
+  const searchWord = word.trim().toLowerCase()
+
+  const filteredPersons = persons.filter((el) => 
+    el.name.toLowerCase().includes(searchWord))
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+
+      <Filter value={word} onChange={handleChangeWord}/>
+
+      <h2>Add a new</h2>
+
+      <PersonForm
+        onSubmit={handleSubmit}
+        valueName={newName}
+        onChangeName={handleChangeName}
+        valueNumber={newNumber}
+        onChangeNumber={handleChangeNumber}
+      />
+
+      <h2>Numbers</h2>
+
+      <Persons filteredPersons={filteredPersons}/>
+    </>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 Exercise 2.11.
 2.11: The Phonebook Step 6
 We continue with developing the phonebook. Store the initial state of the application in the file db.json, which should be placed in the root of the project.
@@ -43,7 +190,7 @@ it means that port 3001 is already in use by another application, e.g. in use by
 Modify the application such that the initial state of the data is fetched from the server using the axios-library. Complete the fetching with an Effect hook.
 */
 //Revisar si se puede simplificar
-/**/
+/*
 import { useState, useEffect } from 'react'
 import Filter from './Components/Filter'
 import PersonForm from './Components/PersonForm'

@@ -34,9 +34,23 @@
 /**/
 /**/
 
+/*
+Exercises 2.12.-2.15.
+*/
 /**/
+
 /**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Full stack developer's oath
