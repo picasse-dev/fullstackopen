@@ -3,7 +3,7 @@
     {
       "id": "1",
       "content": "HTML is easy (this shit comes from a server)",
-      "important": false
+      "important": true
     },
     {
       "id": "2",
@@ -19,6 +19,11 @@
       "content": "a",
       "important": false,
       "id": "ITt1rXFx_rE"
+    },
+    {
+      "content": "b",
+      "important": true,
+      "id": "pzQqeyB3rw8"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

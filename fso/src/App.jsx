@@ -21,18 +21,592 @@
 /**/
 /**/
 
+/*
+Inline styles
+
+React also makes it possible to write styles directly in the code as so-called inline styles.
+
+The idea behind defining inline styles is extremely simple. Any React component or element can be provided with a set of CSS properties as a JavaScript object through the style attribute.
+
+CSS rules are defined slightly differently in JavaScript than in normal CSS files. Let's say that we wanted to give some element the color green and italic font. In CSS, it would look like this:
+
+{
+  color: green;
+  font-style: italic;
+}
+copy
+
+But as a React inline-style object it would look like this:
+
+{
+  color: 'green',
+  fontStyle: 'italic'
+}
+copy
+
+Every CSS property is defined as a separate property of the JavaScript object. Numeric values for pixels can be simply defined as integers. One of the major differences compared to regular CSS, is that hyphenated (kebab case) CSS properties are written in camelCase.
+
+Let's add a footer component, Footer, to our application and define inline styles for it. The component is defined in the file components/Footer.jsx and used in the file App.jsx as follows:
+
+const Footer = () => {
+  const footerStyle = {
+    color: 'green',
+    fontStyle: 'italic'
+  }
+
+  return (
+    <div style={footerStyle}>
+      <br />
+      <p>
+        Note app, Department of Computer Science, University of Helsinki 2025
+      </p>
+    </div>
+  )
+}
+
+export default Footer
+copy
+
+import { useState, useEffect } from 'react'
+import Footer from './components/Footer'
+import Note from './components/Note'
+import Notification from './components/Notification'
+import noteService from './services/notes'
+
+const App = () => {
+  // ...
+
+  return (
+    <div>
+      <h1>Notes</h1>
+
+      <Notification message={errorMessage} />
+
+      // ...  
+
+      <Footer />    
+</div>
+  )
+}
+copy
+
+Inline styles come with certain limitations. For instance, so-called pseudo-classes can't be used straightforwardly.
+
+Inline styles and some of the other ways of adding styles to React components go completely against the grain of old conventions. Traditionally, it has been considered best practice to entirely separate CSS from the content (HTML) and functionality (JavaScript). According to this older school of thought, the goal was to write CSS, HTML, and JavaScript into their separate files.
+
+The philosophy of React is, in fact, the polar opposite of this. Since the separation of CSS, HTML, and JavaScript into separate files did not seem to scale well in larger applications, React bases the division of the application along the lines of its logical functional entities.
+
+The structural units that make up the application's functional entities are React components. A React component defines the HTML for structuring the content, the JavaScript functions for determining functionality, and also the component's styling; all in one place. This is to create individual components that are as independent and reusable as possible.
+
+The code of the final version of our application can be found in the part2-8 branch on GitHub.
+*/
 /**/
-/**/
+import { useState, useEffect } from 'react'
+import Note2 from './components/Note2'//USING NOTE2.JSX
+import noteService from './services/notes'
+import Notification from './components/Notification'
+
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('some error happened...')
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)
+      })
+  }, [])
+
+  const toggleImportance = id => {
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+
+    noteService
+      .update(id, changedNote)
+      .then(returnedNote => {
+        setNotes(notes.map(note =>
+           note.id === id ? 
+           returnedNote : 
+           note))
+    })
+    .catch(error => {
+      setErrorMessage(
+          `Note '${note.content}' was already removed from server`
+        )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
+      setNotes(notes.filter(n => n.id !== id))
+    })
+  }
+  
+  const addNote = (event) => {
+    event.preventDefault()
+    
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5,
+    }
+
+    noteService
+      .create(noteObject)
+      .then(returnedNote => {
+        setNotes(notes.concat(returnedNote))
+        setNewNote('')
+      })
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+  
+  const notesToShow = showAll ? notes : notes.filter((note) => note.important)
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <Notification message={errorMessage} />
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map((note) => (
+          <Note2 key={note.id} note={note} fun={() => toggleImportance(note.id)}/>
+        ))}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} />
+        <button type="submit">save</button>
+      </form>
+    </div>
+  )
+}
+export default App
 /**/
 
 
-/**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Improved error message
+We previously implemented the error message that was displayed when the user tried to toggle the importance of a deleted note with the alert method. Let's implement the error message as its own React component in the file src/components/Notification.jsx.
+
+The component is quite simple:
+
+const Notification = ({ message }) => {
+  if (message === null) {
+    return null
+  }
+
+  return (
+    <div className="error">
+      {message}
+    </div>
+  )
+}
+
+export default Notificationcopy
+If the value of the message prop is null, then nothing is rendered to the screen, and in other cases, the message gets rendered inside of a div element.
+
+Let's add a new piece of state called errorMessage to the App component. Let's initialize it with some error message so that we can immediately test our component:
+
+import { useState, useEffect } from 'react'
+import Note from './components/Note'
+import noteService from './services/notes'
+import Notification from './components/Notification'
+
+const App = () => {
+  const [notes, setNotes] = useState([]) 
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('some error happened...')
+
+  // ...
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <Notification message={errorMessage} />
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all' }
+        </button>
+      </div>      
+      // ...
+    </div>
+  )
+}copy
+Then let's add a style rule that suits an error message:
+
+.error {
+  color: red;
+  background: lightgrey;
+  font-size: 20px;
+  border-style: solid;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+}copy
+Now we are ready to add the logic for displaying the error message. Let's change the toggleImportanceOf function in the following way:
+
+  const toggleImportanceOf = id => {
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+
+    noteService
+      .update(id, changedNote).then(returnedNote => {
+        setNotes(notes.map(note => note.id !== id ? note : returnedNote))
+      })
+      .catch(error => {
+        setErrorMessage(
+          `Note '${note.content}' was already removed from server`
+        )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
+        setNotes(notes.filter(n => n.id !== id))
+      })
+  }copy
+When the error occurs we add a descriptive error message to the errorMessage state. At the same time, we start a timer, that will set the errorMessage state to null after five seconds.
+
+The result looks like this:
+
+error removed from server screenshot from app
+The code for the current state of our application can be found in the part2-7 branch on GitHub.
+*/
+/*
+import { useState, useEffect } from 'react'
+import Note2 from './components/Note2'//USING NOTE2.JSX
+import noteService from './services/notes'
+import Notification from './components/Notification'
+
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('some error happened...')
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)
+      })
+  }, [])
+
+  const toggleImportance = id => {
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+
+    noteService
+      .update(id, changedNote)
+      .then(returnedNote => {
+        setNotes(notes.map(note =>
+           note.id === id ? 
+           returnedNote : 
+           note))
+    })
+    .catch(error => {
+      setErrorMessage(
+          `Note '${note.content}' was already removed from server`
+        )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
+      setNotes(notes.filter(n => n.id !== id))
+    })
+  }
+  
+  const addNote = (event) => {
+    event.preventDefault()
+    
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5,
+    }
+
+    noteService
+      .create(noteObject)
+      .then(returnedNote => {
+        setNotes(notes.concat(returnedNote))
+        setNewNote('')
+      })
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+  
+  const notesToShow = showAll ? notes : notes.filter((note) => note.important)
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <Notification message={errorMessage} />
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map((note) => (
+          <Note2 key={note.id} note={note} fun={() => toggleImportance(note.id)}/>
+        ))}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} />
+        <button type="submit">save</button>
+      </form>
+    </div>
+  )
+}
+export default App
 /**/
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+P2e
+Adding styles to React app
+The appearance of our current Notes application is quite modest. In exercise 0.2, the assignment was to go through Mozilla's CSS tutorial.
+
+Let's take a look at how we can add styles to a React application. There are several different ways of doing this and we will take a look at the other methods later on. First, we will add CSS to our application the old-school way; in a single file without using a CSS preprocessor (although this is not entirely true as we will learn later on).
+
+Let's add a new index.css file under the src directory and then add it to the application by importing it in the main.jsx file:
+
+import './index.css'copy
+Let's add the following CSS rule to the index.css file:
+
+h1 {
+  color: green;
+}copy
+CSS rules comprise of selectors and declarations. The selector defines which elements the rule should be applied to. The selector above is h1, which will match all of the h1 header tags in our application.
+
+The declaration sets the color property to the value green.
+
+One CSS rule can contain an arbitrary number of properties. Let's modify the previous rule to make the text cursive, by defining the font style as italic:
+
+h1 {
+  color: green;
+  font-style: italic;
+}copy
+There are many ways of matching elements by using different types of CSS selectors.
+
+If we wanted to target, let's say, each one of the notes with our styles, we could use the selector li, as all of the notes are wrapped inside li tags:
+
+const Note = ({ note, toggleImportance }) => {
+  const label = note.important 
+    ? 'make not important' 
+    : 'make important'
+
+  return (
+    <li>
+      {note.content} 
+      <button onClick={toggleImportance}>{label}</button>
+    </li>
+  )
+}copy
+Let's add the following rule to our style sheet (since my knowledge of elegant web design is close to zero, the styles don't make much sense):
+
+li {
+  color: grey;
+  padding-top: 3px;
+  font-size: 15px;
+}copy
+Using element types for defining CSS rules is slightly problematic. If our application contained other li tags, the same style rule would also be applied to them.
+
+If we want to apply our style specifically to notes, then it is better to use class selectors.
+
+In regular HTML, classes are defined as the value of the class attribute:
+
+<li class="note">some text...</li>copy
+In React we have to use the className attribute instead of the class attribute. With this in mind, let's make the following changes to our Note component:
+
+const Note = ({ note, toggleImportance }) => {
+  const label = note.important 
+    ? 'make not important' 
+    : 'make important'
+
+  return (
+    <li className='note'>
+      {note.content} 
+      <button onClick={toggleImportance}>{label}</button>
+    </li>
+  )
+}copy
+Class selectors are defined with the .classname syntax:
+
+.note {
+  color: grey;
+  padding-top: 5px;
+  font-size: 15px;
+}copy
+If you now add other li elements to the application, they will not be affected by the style rule above.
+
+
+*/
+////added className=note to note2 compenent by index.css celled in main.jsx
+/*
+import { useState, useEffect } from 'react'
+import Note2 from './components/Note2'//USING NOTE2.JSX
+import noteService from './services/notes'
+
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)
+      })
+  }, [])
+
+  const toggleImportance = id => {
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+
+    noteService
+      .update(id, changedNote)
+      .then(returnedNote => {
+        setNotes(notes.map(note =>
+           note.id === id ? 
+           returnedNote : 
+           note))
+    })
+    .catch(error => {
+      alert(
+        `the note '${note.content}' was already deleted from server`
+      )
+      setNotes(notes.filter(n => n.id !== id))
+    })
+  }
+  
+  const addNote = (event) => {
+    event.preventDefault()
+    
+    const noteObject = {
+      content: newNote,
+      important: Math.random() > 0.5,
+    }
+
+    noteService
+      .create(noteObject)
+      .then(returnedNote => {
+        setNotes(notes.concat(returnedNote))
+        setNewNote('')
+      })
+  }
+
+  const handleNoteChange = (event) => setNewNote(event.target.value)
+  
+  const notesToShow = showAll ? notes : notes.filter((note) => note.important)
+
+  return (
+    <div>
+      <h1>Notes</h1>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map((note) => (
+          <Note2 key={note.id} note={note} fun={() => toggleImportance(note.id)}/>
+        ))}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} />
+        <button type="submit">save</button>
+      </form>
+    </div>
+  )
+}
+export default App
 /**/
-/**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Exercises 2.12.-2.15.
@@ -183,7 +757,7 @@ It's probably not a good idea to use alert in more serious React applications. W
 
 The code for the current state of our application can be found in the part2-6 branch on GitHub.
 */
-/**/
+/*
 import { useState, useEffect } from 'react'
 import Note2 from './components/Note2'//USING NOTE2.JSX
 import noteService from './services/notes'
