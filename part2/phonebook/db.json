@@ -22,18 +22,13 @@
     },
     {
       "name": "JOn",
-      "number": "45679910",
+      "number": "4",
       "id": "W4IEOepkZmQ"
     },
     {
-      "name": "a",
-      "number": "1",
-      "id": "RFN1ikMA44k"
-    },
-    {
-      "name": "b",
-      "number": "11",
-      "id": "xGScnxcxMa8"
+      "name": "aa",
+      "number": "122",
+      "id": "6C-2TUlrPnw"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

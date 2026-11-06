@@ -105,6 +105,7 @@ import { useState, useEffect } from 'react'
 import Note2 from './components/Note2'//USING NOTE2.JSX
 import noteService from './services/notes'
 import Notification from './components/Notification'
+import Footer from './components/Footer'
 
 
 const App = () => {
@@ -135,11 +136,11 @@ const App = () => {
     })
     .catch(error => {
       setErrorMessage(
-          `Note '${note.content}' was already removed from server`
-        )
-        setTimeout(() => {
-          setErrorMessage(null)
-        }, 5000)
+        `Note '${note.content}' was already removed from server`
+      )
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 5000)
       setNotes(notes.filter(n => n.id !== id))
     })
   }
@@ -182,6 +183,7 @@ const App = () => {
         <input value={newNote} onChange={handleNoteChange} />
         <button type="submit">save</button>
       </form>
+      <Footer/>
     </div>
   )
 }
@@ -396,6 +398,150 @@ const App = () => {
 }
 export default App
 /**/
+/*
+1. ¿Qué sucede cuando se ejecuta el catch?
+
+El orden de ejecución de JavaScript es:
+1. setErrorMessage(...): solicita actualizar el estado.
+2. setTimeout(...): programa una función para ejecutarse dentro de 5 segundos. No provoca un renderizado por sí mismo.
+3. setNotes(...): solicita actualizar el estado de las notas.
+Pero aquí viene lo interesante:
+
+React 18+ agrupa las actualizaciones de estado que ocurren dentro de un mismo callback asíncrono, como un .catch() de una Promise.
+
+Por tanto, normalmente sucede esto: F*CKKK
+
+Línea temporal
+1. Se ejecuta el catch
+   Entra al callback porque el servidor devuelve un error.
+2. setErrorMessage()
+   Solicita cambiar el mensaje de error.
+3. setTimeout()
+   Programa la eliminación del mensaje para dentro de 5 segundos.
+4. setNotes()
+   Solicita eliminar la nota del estado local.
+5. Un renderizado
+   React agrupa ambas actualizaciones y vuelve a renderizar App.
+6. Transcurren 5 segundos
+   Se ejecuta el callback del setTimeout.
+7. setErrorMessage(null)
+   Se solicita otra actualización y React vuelve a renderizar App.
+
+En condiciones normales, tienes 2 renderizados, no 3.
+
+2. ¿Se vuelve a ejecutar todo el componente App?
+¡Sí! Y este es un concepto fundamental de React.
+
+Cuando React vuelve a renderizar un componente, vuelve a ejecutar la función completa:
+const App = () => {
+  // Todo esto vuelve a ejecutarse
+
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('some error happened...')
+
+  useEffect(() => {
+    // ...
+  }, [])
+
+  const toggleImportance = id => {
+    // ...
+  }
+
+  const addNote = event => {
+    // ...
+  }
+
+  const notesToShow = showAll
+    ? notes
+    : notes.filter(note => note.important)
+
+  return (
+    // ...
+  )
+}
+
+
+Sin embargo, hay una distinción importante:
+Elemento	        ¿Qué sucede en cada renderizado?
+useState	        Se vuelve a ejecutar la llamada, pero conserva el estado anterior.
+useEffect	        Se registra nuevamente, pero su callback no se ejecuta si sus dependencias no cambiaron.
+toggleImportance	Se crea nuevamente la función.
+addNote	          Se crea nuevamente la función.
+notesToShow	      Se vuelve a calcular.
+return	          Se vuelve a ejecutar y React reconcilia el resultado.
+
+3. Entonces, ¿qué pasa con useState?
+Esta es probablemente la parte más importante.
+
+Imagina que tienes:
+const [notes, setNotes] = useState([])
+
+En el primer renderizado, React inicializa notes con [].
+En el segundo renderizado, React vuelve a encontrar esa llamada a useState, pero NO vuelve a inicializar notes con un array vacío.
+React conserva el estado asociado a ese Hook y devuelve su valor actualizado.
+
+Es decir:
+// Primer renderizado
+notes = []
+// Segundo renderizado
+notes = [nota1, nota2, nota3]
+// Tercer renderizado
+notes = [nota1, nota2]
+
+El valor inicial solamente se utiliza durante la inicialización del componente.
+
+4. ¿Y el useEffect con []?
+Tu efecto:
+useEffect(() => {
+  noteService
+    .getAll()
+    .then(initialNotes => {
+      setNotes(initialNotes)
+    })
+}, [])
+
+
+Aunque la llamada a useEffect se evalúa nuevamente durante cada renderizado, el efecto tiene un array de dependencias vacío.
+
+Por eso, React no vuelve a ejecutar su callback en los renderizados posteriores.
+
+En resumen:
+- Renderizado inicial: ejecuta el efecto después del commit.
+- Renderizados posteriores: no vuelve a ejecutar el efecto.
+- No vuelve a solicitar getAll() cada vez que cambia notes o errorMessage.
+Nota: En desarrollo, si utilizas React Strict Mode, puede haber ejecuciones adicionales durante el montaje para detectar efectos secundarios.
+
+5. Una última distinción importante
+Que App se vuelva a ejecutar no significa necesariamente que todos sus componentes hijos tengan que actualizar el DOM.
+
+Por ejemplo:
+<Note2
+  key={note.id}
+  note={note}
+  fun={() => toggleImportance(note.id)}
+/>
+
+React vuelve a evaluar esa parte del JSX y reconcilia los componentes. Note2 normalmente también volverá a renderizarse, aunque sus datos no hayan cambiado.
+
+Si quisieras evitar algunos renderizados innecesarios, podrías utilizar React.memo, aunque en este ejemplo también tendrías que considerar que estás creando una nueva función fun en cada renderizado.
+
+Quédate con esta idea:
+React vuelve a ejecutar la función completa del componente cuando necesita renderizarlo. Los Hooks conservan su estado entre renderizados; no se reinicializan. Y useEffect controla cuándo ejecutar sus efectos mediante sus dependencias.
+
+Esta distinción entre ejecución de la función, renderizado y actualización real del DOM es fundamental para entender React.
+/**/
+
+
+
+
+
+
+
+
+
+
 
 
 

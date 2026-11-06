@@ -1,4 +1,197 @@
 /*
+Exercises 2.16.-2.17.
+2.16: Phonebook step 11
+Use the improved error message example from part 2 as a guide to show a notification that lasts for a few seconds after a successful operation is executed (a person is added or a number is changed):
+*/
+/**/
+import { useState, useEffect } from 'react'
+import Filter from './Components/Filter'
+import PersonForm from './Components/PersonForm'
+import Persons2 from './Components/Persons2'
+import personsService from './services/persons'
+import NotificationAddUpdt from './Components/NotificationAddUpdt'
+
+
+const normalizeNumber = (number) =>
+  number.replace(/[\s-]/g, '')
+
+const App = () => {
+  const [persons, setPersons] = useState([])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [word, setWord] = useState('')
+  const [msgError, setMsgError] = useState(null)
+  const [msgAddUpdt, setMsgAddUpdt] = useState(null)
+
+  useEffect(() => {
+    personsService
+      .getAll()
+      .then(initialPersons => 
+        setPersons(initialPersons)
+      )
+  },[])
+  
+  const handleChangeName = (e) => setNewName(e.target.value)
+  const handleChangeNumber = (e) => setNewNumber(e.target.value)
+  const handleChangeWord = (e) => setWord(e.target.value)
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const name = newName.trim()
+    const number = newNumber.trim()
+
+    if (!name || !number) return
+
+
+    const personToUpdate = persons.find(person =>
+      person.name.toLowerCase() === name.toLowerCase()
+    )
+
+    const numberOwner = persons.find(person =>
+      normalizeNumber(person.number) === normalizeNumber(number)
+    )
+    //El numero ya existe y lo tiene otra persona
+    if (numberOwner && numberOwner.id !== personToUpdate?.id) {
+      alert(`${number} is already added`)
+      return
+    }
+
+    if (personToUpdate) {
+      if (normalizeNumber(personToUpdate.number) === normalizeNumber(number)) {
+        alert(`${name} already has this number`)
+        return
+      }
+
+      const wantReplace = window.confirm(`${name} is already added to phonebook, replace the old number with a new one?`)
+      if (!wantReplace) return
+
+
+      const updatedObject = { name: personToUpdate.name, number}
+
+      personsService
+        .updatePut(personToUpdate.id, updatedObject)
+        .then(updatedPerson => {
+          setPersons(prev => 
+            prev.map(person =>
+              person.id === updatedPerson.id ? 
+              updatedPerson : 
+              person
+            )
+          )
+          setNewName('')
+          setNewNumber('')
+
+          setMsgAddUpdt(`The number of '${personToUpdate.name}' has been changed`)
+          setTimeout(()=>{setMsgAddUpdt(null)},3000)
+        })
+
+        
+      return
+    }
+
+    const newObject = { name, number }
+
+    personsService
+      .create(newObject)
+      .then(personCreated => {
+        setPersons(prev =>
+          [...prev, personCreated])
+        setNewName('')
+        setNewNumber('')
+
+        setMsgAddUpdt(`'${personCreated.name}' has been added to contact list with number ${personCreated.number}`)
+        setTimeout(()=>{setMsgAddUpdt(null)},3000)
+      })
+  }
+
+  const handleDelete = (id) => {
+    
+    const personToDelete = persons.find(p => p.id === id)
+    if (!personToDelete) return//No se hace esta comprobacion con el q no existe??? ah esta en persons, pero no en el server
+    
+    const wantDelete = window.confirm(`Delete '${personToDelete.name}?'`)
+    if (!wantDelete) return
+
+    personsService
+      .remove(id)
+      .then(() => {
+        setPersons(prev =>
+          prev.filter(n => n.id !== id)
+        )
+      })
+  }
+
+  const searchWord = word.trim().toLowerCase()
+
+  const filteredPersons = persons.filter((el) => 
+    el.name.toLowerCase().includes(searchWord))
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+
+      <Filter value={word} onChange={handleChangeWord}/>
+
+      <NotificationAddUpdt message={msgAddUpdt}/>
+
+      <h2>Add a new</h2>
+
+      <PersonForm
+        onSubmit={handleSubmit}
+        valueName={newName}
+        onChangeName={handleChangeName}
+        valueNumber={newNumber}
+        onChangeNumber={handleChangeNumber}
+      />
+
+      <h2>Numbers</h2>
+
+      <Persons2 
+      filteredPersons={filteredPersons} 
+      handleDelete={handleDelete}/>
+    </>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 2.15*: The Phonebook step 10
 Why is there an asterisk in the exercise? See here for the explanation.
 
@@ -6,7 +199,7 @@ Change the functionality so that if a number is added to an already existing use
 
 If the person's information is already in the phonebook, the application can ask the user to confirm the action:
 */
-/**/
+/*
 import { useState, useEffect } from 'react'
 import Filter from './Components/Filter'
 import PersonForm from './Components/PersonForm'

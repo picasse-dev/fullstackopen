@@ -3,28 +3,38 @@ import axios from 'axios'
 const baseUrl = 'http://localhost:3001/persons'
 
 const getAll = () => {
-    const response = axios.get(baseUrl)
-    return response.then(response => response.data)
+  const request = axios.get(baseUrl)
+  const nonExisting = {
+    name: "non existing contact",
+    number: '666',
+    id: "666",
+  }
+  return request.then(response => response.data.concat(nonExisting))
 }
 
+// const getAll = () => {
+//     const response = axios.get(baseUrl)
+//     return response.then(response => response.data)
+// }
+
 const create = (newObject) => {
-    const response = axios.post(baseUrl, newObject)
-    return response.then(response => response.data)
+    const request = axios.post(baseUrl, newObject)
+    return request.then(response => response.data)
 }
 
 const updatePut = (id, updatedObject) => {
-    const response = axios.put(`${baseUrl}/${id}`, updatedObject)
-    return response.then(response => response.data)
+    const request = axios.put(`${baseUrl}/${id}`, updatedObject)
+    return request.then(response => response.data)
 }
 
 const updatePatch = (id, updatedObjectProperty) => {
-    const response = axios.patch(`${baseUrl}/${id}`, updatedObjectProperty)
-    return response.then(response => response.data)
+    const request = axios.patch(`${baseUrl}/${id}`, updatedObjectProperty)
+    return request.then(response => response.data)
 }
 
 const remove = (id) => {
-    const response = axios.delete(`${baseUrl}/${id}`)
-    return response.then(response => response.data)
+    const request = axios.delete(`${baseUrl}/${id}`)
+    return request.then(response => response.data)
 }
 
 export default {
