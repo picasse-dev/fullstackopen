@@ -1,9 +1,224 @@
 /*
+2.17*: Phonebook step 12
+Open your application in two browsers. If you delete a person in browser 1 a short while before attempting to change the person's phone number in browser 2, you will get the following error messages:
+
+error message 404 not found when changing multiple browsers
+Fix the issue according to the example shown in promise and errors in part 2. Modify the example so that the user is shown a message when the operation does not succeed. The messages shown for successful and unsuccessful events should look different:
+
+error message shown on screen instead of in console feature add-on
+Note that even if you handle the exception, the first "404" error message is still printed to the console. But you should not see "Uncaught (in promise) Error".
+*/
+/**/
+import { useState, useEffect } from 'react'
+import Filter from './Components/Filter'
+import PersonForm from './Components/PersonForm'
+import Persons2 from './Components/Persons2'
+import personsService from './services/persons'
+import NotificationErr from './Components/NotificationErr'
+import NotificationAddUpdt from './Components/NotificationAddUpdt'
+
+
+const normalizeNumber = (number) =>
+  number.replace(/[\s-]/g, '')
+
+const App = () => {
+  const [persons, setPersons] = useState([])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [word, setWord] = useState('')
+  const [msgError, setMsgError] = useState(null)
+  const [msgAddUpdt, setMsgAddUpdt] = useState(null)
+
+  const showSuccess = (msg) => {
+    setMsgAddUpdt(msg)
+    setTimeout(()=>{setMsgAddUpdt(null)},3000)
+  }
+
+  const showError = (msg) => {
+    setMsgError(msg)
+    setTimeout(() => {setMsgError(null)}, 3000)
+  }
+
+  useEffect(() => {
+    personsService
+      .getAll()
+      .then(initialPersons => {
+        setPersons(initialPersons)
+        showSuccess("Data obtained from the server correctly")
+      })
+      .catch(error => {
+        showError("Cant obtain persons info from the server")
+      })
+  },[])
+  
+  const handleChangeName = (e) => setNewName(e.target.value)
+  const handleChangeNumber = (e) => setNewNumber(e.target.value)
+  const handleChangeWord = (e) => setWord(e.target.value)
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const name = newName.trim()
+    const number = newNumber.trim()
+
+    if (!name || !number) return
+
+
+    const personToUpdate = persons.find(person =>
+      person.name.toLowerCase() === name.toLowerCase()
+    )
+
+    const numberOwner = persons.find(person =>
+      normalizeNumber(person.number) === normalizeNumber(number)
+    )
+    //El numero ya existe y lo tiene otra persona
+    if (numberOwner && numberOwner.id !== personToUpdate?.id) {
+      alert(`${number} is already added`)
+      return
+    }
+
+    if (personToUpdate) {
+      if (normalizeNumber(personToUpdate.number) === normalizeNumber(number)) {
+        alert(`${name} already has this number`)
+        return
+      }
+
+      const wantReplace = window.confirm(`${name} is already added to phonebook, replace the old number with a new one?`)
+      if (!wantReplace) return
+
+
+      const updatedObject = { name: personToUpdate.name, number}
+
+      personsService
+        .updatePut(personToUpdate.id, updatedObject)
+        .then(updatedPerson => {
+          setPersons(prev => 
+            prev.map(person =>
+              person.id === updatedPerson.id ? 
+              updatedPerson : 
+              person
+            )
+          )
+          setNewName('')
+          setNewNumber('')
+
+          showSuccess(`The number of '${personToUpdate.name}' has been changed`)
+        })
+        .catch(error => {
+          showError(`Information of '${personToUpdate.name}' has already been removed from the server`)
+          setPersons(prev => prev.filter(n => n.id !== personToUpdate.id))
+        })
+      return
+    }
+
+    const newObject = { name, number }
+
+    personsService
+      .create(newObject)
+      .then(personCreated => {
+        setPersons(prev =>
+          [...prev, personCreated])
+        setNewName('')
+        setNewNumber('')
+
+        showSuccess(`'${personCreated.name}' has been added to contact list with number '${personCreated.number}'`)
+      })
+      .catch(error => {
+        showError('Could not add the person to the server')
+      })
+  }
+
+  const handleDelete = (id) => {
+    
+    const personToDelete = persons.find(p => p.id === id)
+    if (!personToDelete) return//No se hace esta comprobacion con el q no existe??? ah esta en persons, pero no en el server
+    
+    const wantDelete = window.confirm(`Delete '${personToDelete.name}?'`)
+    if (!wantDelete) return
+
+    personsService
+      .remove(id)
+      .then(() => {
+        setPersons(prev =>
+          prev.filter(n => n.id !== id))
+
+        showSuccess(`'${personToDelete.name}' has been removed`)
+      })
+      .catch(error => {
+        showError(`Information of '${personToDelete.name}' has already been removed from the server`)
+        setPersons(prev => prev.filter(n => n.id !== id))
+      })
+  }
+
+  const searchWord = word.trim().toLowerCase()
+
+  const filteredPersons = persons.filter((el) => 
+    el.name.toLowerCase().includes(searchWord))
+
+  return (
+    <>
+      <h2>Phonebook</h2>
+
+      <Filter value={word} onChange={handleChangeWord}/>
+
+      <NotificationErr message={msgError}/>
+      <NotificationAddUpdt message={msgAddUpdt}/>
+
+      <h2>Add a new</h2>
+
+      <PersonForm
+        onSubmit={handleSubmit}
+        valueName={newName}
+        onChangeName={handleChangeName}
+        valueNumber={newNumber}
+        onChangeNumber={handleChangeNumber}
+      />
+
+      <h2>Numbers</h2>
+
+      <Persons2 
+        filteredPersons={filteredPersons} 
+        handleDelete={handleDelete}/>
+    </>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 Exercises 2.16.-2.17.
 2.16: Phonebook step 11
 Use the improved error message example from part 2 as a guide to show a notification that lasts for a few seconds after a successful operation is executed (a person is added or a number is changed):
 */
-/**/
+/*
 import { useState, useEffect } from 'react'
 import Filter from './Components/Filter'
 import PersonForm from './Components/PersonForm'
@@ -20,7 +235,6 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [word, setWord] = useState('')
-  const [msgError, setMsgError] = useState(null)
   const [msgAddUpdt, setMsgAddUpdt] = useState(null)
 
   useEffect(() => {
