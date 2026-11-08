@@ -9,17 +9,377 @@
 /**/
 /**/
 
-/**/
+/*
+Exercises 2.18.-2.20.
+*/
 /**/
 /**/
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Couple of important remarks
+At the end of this part there are a few more challenging exercises. At this stage, you can skip the exercises if they are too much of a headache, we will come back to the same themes again later. The material is worth reading through in any case.
+
+We have done one thing in our app that is masking away a very typical source of error.
+
+We set the state notes to have initial value of an empty array:
+
+const App = () => {
+  const [notes, setNotes] = useState([])
+
+  // ...
+}
+This is a pretty natural initial value since the notes are a set, that is, there are many notes that the state will store.
+
+If the state were only saving "one thing", a more appropriate initial value would be null denoting that there is nothing in the state at the start. Let's see what happens if we use this initial value:
+
+const App = () => {
+  const [notes, setNotes] = useState(null)
+
+  // ...
+}
+The app breaks down:
+
+console typerror cannot read properties of null via map from App
+The error message gives the reason and location for the error. The code that caused the problems is the following:
+
+  // notesToShow gets the value of notes
+  const notesToShow = showAll
+    ? notes
+    : notes.filter(note => note.important)
+
+  // ...
+
+  {notesToShow.map(note =>
+    <Note key={note.id} note={note} />
+  )}
+The error message is
+
+Cannot read properties of null (reading 'map')
+The variable notesToShow is first assigned the value of the state notes and then the code tries to call method map to a nonexisting object, that is, to null.
+
+What is the reason for that?
+
+The effect hook uses the function setNotes to set notes to have the notes that the backend is returning:
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)
+      })
+  }, [])
+However the problem is that the effect is executed only after the first render. And because notes has the initial value of null:
+
+const App = () => {
+  const [notes, setNotes] = useState(null)
+
+  // ...
+on the first render the following code gets executed:
+
+notesToShow = notes
+
+// ...
+
+notesToShow.map(note => ...)
+and this blows up the app since we can not call method map of the value null.
+
+When we set notes to be initially an empty array, there is no error since it is allowed to call map to an empty array.
+
+So, the initialization of the state "masked" the problem that is caused by the fact that the data is not yet fetched from the backend.
+
+Another way to circumvent the problem is to use conditional rendering and return null if the component state is not properly initialized:
+
+const App = () => {
+  const [notes, setNotes] = useState(null)
+  // ... 
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)
+      })
+  }, [])
+
+  // do not render anything if notes is still null
+  if (!notes) { 
+    return null 
+  }
+
+  // ...
+} 
+So on the first render, nothing is rendered. When the notes arrive from the backend, the effect used function setNotes to set the value of the state notes. This causes the component to be rendered again, and at the second render, the notes get rendered to the screen.
+
+The method based on conditional rendering is suitable in cases where it is impossible to define the state so that the initial rendering is possible.
+
+The other thing that we still need to have a closer look at is the second parameter of the useEffect:
+
+  useEffect(() => {
+    noteService
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)  
+      })
+  }, [])
+
+The second parameter of useEffect is used to specify how often the effect is run. The principle is that the effect is always executed after the first render of the component and when the value of the second parameter changes.
+
+If the second parameter is an empty array [], its content never changes and the effect is only run after the first render of the component. This is exactly what we want when we are initializing the app state from the server.
+
+However, there are situations where we want to perform the effect at other times, e.g. when the state of the component changes in a particular way.
+
+Consider the following simple application for querying currency exchange rates from the Exchange rate API:
+
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+
+const App = () => {
+  const [value, setValue] = useState('')
+  const [rates, setRates] = useState({})
+  const [currency, setCurrency] = useState(null)
+
+  useEffect(() => {
+    console.log('effect run, currency is now', currency)
+
+    // skip if currency is not defined
+    if (currency) {
+      console.log('fetching exchange rates...')
+      axios
+        .get(`https://open.er-api.com/v6/latest/${currency}`)
+        .then(response => {
+          setRates(response.data.rates)
+        })
+    }
+  }, [currency])
+
+  const handleChange = (event) => {
+    setValue(event.target.value)
+  }
+
+  const onSearch = (event) => {
+    event.preventDefault()
+    setCurrency(value)
+  }
+
+  return (
+    <div>
+      <form onSubmit={onSearch}>
+        currency: <input value={value} onChange={handleChange} />
+        <button type="submit">exchange rate</button>
+      </form>
+      <pre>
+        {JSON.stringify(rates, null, 2)}
+      </pre>
+    </div>
+  )
+}
+
+export default App
+The user interface of the application has a form, in the input field of which the name of the desired currency is written. If the currency exists, the application renders the exchange rates of the currency to other currencies:
+
+browser showing currency exchange rates with eur typed and console saying fetching exchange rates
+The application sets the name of the currency entered to the form to the state currency at the moment the button is pressed.
+
+When the currency gets a new value, the application fetches its exchange rates from the API in the effect function:
+
+const App = () => {
+  // ...
+  const [currency, setCurrency] = useState(null)
+
+  useEffect(() => {
+    console.log('effect run, currency is now', currency)
+
+    // skip if currency is not defined
+    if (currency) {
+      console.log('fetching exchange rates...')
+      axios
+        .get(`https://open.er-api.com/v6/latest/${currency}`)
+        .then(response => {
+          setRates(response.data.rates)
+        })
+    }
+  }, [currency])
+  // ...
+}
+The useEffect hook now has [currency] as the second parameter. The effect function is therefore executed after the first render, and always after the dependency array as its second parameter [currency] changes. That is, when the state currency gets a new value, the content of the dependency array changes and the effect function is executed.
+
+It is natural to choose null as the initial value for the variable currency, because currency represents a single item. The initial value null indicates that there is nothing in the state yet, and it is also easy to check with a simple if statement whether a value has been assigned to the variable. The effect has the following condition
+
+if (currency) { 
+  // exchange rates are fetched
+}
+which prevents requesting the exchange rates just after the first render when the variable currency still has the initial value, i.e. a null value.
+
+So if the user writes e.g. eur in the search field, the application uses Axios to perform an HTTP GET request to the address https://open.er-api.com/v6/latest/eur and stores the response in the rates state.
+
+When the user then enters another value in the search field, e.g. usd, the effect function is executed again and the exchange rates of the new currency are requested from the API.
+
+The way presented here for making API requests might seem a bit awkward. This particular application could have been made completely without using the useEffect, by making the API requests directly in the form submit handler function:
+
+  const onSearch = (event) => {
+    event.preventDefault()
+    axios
+      .get(`https://open.er-api.com/v6/latest/${value}`)
+      .then(response => {
+        setRates(response.data.rates)
+      })
+  }
+However, there are situations where that technique would not work. For example, you might encounter one such a situation in the exercise 2.20 where the use of useEffect could provide a solution. Note that this depends quite much on the approach you selected, e.g. the model solution does not use this trick.
+*/
 /**/
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+let a = 0;
+const App = () => {
+  (console.log('render: ',a), a++)
+  
+  const [value, setValue] = useState('')
+  const [rates, setRates] = useState({})
+  const [currency, setCurrency] = useState(null)
+
+  useEffect(() => {
+    console.log('effect run, currency is now', currency)
+
+    // skip if currency is not defined
+    if (currency) {
+      console.log('fetching exchange rates...')
+      axios
+        .get(`https://open.er-api.com/v6/latest/${currency}`)
+        .then(response => {
+          console.log(response)
+          setRates(response.data.rates)
+        })
+    }
+  }, [currency])
+
+  const handleChange = (event) => {
+    setValue(event.target.value)
+  }
+
+  const onSearch = (event) => {
+    event.preventDefault()
+    setCurrency(value)
+  }
+
+  return (
+    <div>
+      <form onSubmit={onSearch}>
+        currency: <input value={value} onChange={handleChange} />
+        <button type="submit">exchange rate</button>
+      </form>
+      <pre>
+        {JSON.stringify(rates, null, 2)}
+      </pre>
+    </div>
+  )
+}
+
+export default App
+/**/
+/*
+2. JSON.stringify()
+
+Convierte un objeto JavaScript en una cadena de texto JSON.
+JSON.stringify(rates)
+
+
+Resultado:
+{"USD":1,"EUR":0.92,"COP":3900}
+
+
+3. Los parámetros null, 2
+
+Aquí está lo interesante:
+- null: no se aplica ningún filtro o transformación personalizada.
+- 2: utiliza dos espacios de indentación para organizar el JSON.
+4. <pre>
+
+Es una etiqueta HTML que conserva los espacios y saltos de línea del texto.
+Resultado final
+Visualmente se mostraría así:
+{
+  "USD": 1,
+  "EUR": 0.92,
+  "COP": 3900
+}
+
+
+En resumen: es una forma rápida de inspeccionar o depurar objetos en React, mostrando su contenido completo en formato JSON legible.
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Exercises 2.16.-2.17.
+*/
 /**/
 /**/
 
-/**/
-/**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Inline styles
@@ -34,7 +394,7 @@ CSS rules are defined slightly differently in JavaScript than in normal CSS file
   color: green;
   font-style: italic;
 }
-copy
+
 
 But as a React inline-style object it would look like this:
 
@@ -42,7 +402,7 @@ But as a React inline-style object it would look like this:
   color: 'green',
   fontStyle: 'italic'
 }
-copy
+
 
 Every CSS property is defined as a separate property of the JavaScript object. Numeric values for pixels can be simply defined as integers. One of the major differences compared to regular CSS, is that hyphenated (kebab case) CSS properties are written in camelCase.
 
@@ -65,7 +425,7 @@ const Footer = () => {
 }
 
 export default Footer
-copy
+
 
 import { useState, useEffect } from 'react'
 import Footer from './components/Footer'
@@ -88,7 +448,7 @@ const App = () => {
 </div>
   )
 }
-copy
+
 
 Inline styles come with certain limitations. For instance, so-called pseudo-classes can't be used straightforwardly.
 
@@ -100,7 +460,7 @@ The structural units that make up the application's functional entities are Reac
 
 The code of the final version of our application can be found in the part2-8 branch on GitHub.
 */
-/**/
+/*
 import { useState, useEffect } from 'react'
 import Note2 from './components/Note2'//USING NOTE2.JSX
 import noteService from './services/notes'
@@ -242,7 +602,7 @@ const Notification = ({ message }) => {
   )
 }
 
-export default Notificationcopy
+export default Notification
 If the value of the message prop is null, then nothing is rendered to the screen, and in other cases, the message gets rendered inside of a div element.
 
 Let's add a new piece of state called errorMessage to the App component. Let's initialize it with some error message so that we can immediately test our component:
@@ -272,7 +632,7 @@ const App = () => {
       // ...
     </div>
   )
-}copy
+}
 Then let's add a style rule that suits an error message:
 
 .error {
@@ -283,7 +643,7 @@ Then let's add a style rule that suits an error message:
   border-radius: 5px;
   padding: 10px;
   margin-bottom: 10px;
-}copy
+}
 Now we are ready to add the logic for displaying the error message. Let's change the toggleImportanceOf function in the following way:
 
   const toggleImportanceOf = id => {
@@ -303,7 +663,7 @@ Now we are ready to add the logic for displaying the error message. Let's change
         }, 5000)
         setNotes(notes.filter(n => n.id !== id))
       })
-  }copy
+  }
 When the error occurs we add a descriptive error message to the errorMessage state. At the same time, we start a timer, that will set the errorMessage state to null after five seconds.
 
 The result looks like this:
@@ -582,12 +942,12 @@ Let's take a look at how we can add styles to a React application. There are sev
 
 Let's add a new index.css file under the src directory and then add it to the application by importing it in the main.jsx file:
 
-import './index.css'copy
+import './index.css'
 Let's add the following CSS rule to the index.css file:
 
 h1 {
   color: green;
-}copy
+}
 CSS rules comprise of selectors and declarations. The selector defines which elements the rule should be applied to. The selector above is h1, which will match all of the h1 header tags in our application.
 
 The declaration sets the color property to the value green.
@@ -597,7 +957,7 @@ One CSS rule can contain an arbitrary number of properties. Let's modify the pre
 h1 {
   color: green;
   font-style: italic;
-}copy
+}
 There are many ways of matching elements by using different types of CSS selectors.
 
 If we wanted to target, let's say, each one of the notes with our styles, we could use the selector li, as all of the notes are wrapped inside li tags:
@@ -613,21 +973,21 @@ const Note = ({ note, toggleImportance }) => {
       <button onClick={toggleImportance}>{label}</button>
     </li>
   )
-}copy
+}
 Let's add the following rule to our style sheet (since my knowledge of elegant web design is close to zero, the styles don't make much sense):
 
 li {
   color: grey;
   padding-top: 3px;
   font-size: 15px;
-}copy
+}
 Using element types for defining CSS rules is slightly problematic. If our application contained other li tags, the same style rule would also be applied to them.
 
 If we want to apply our style specifically to notes, then it is better to use class selectors.
 
 In regular HTML, classes are defined as the value of the class attribute:
 
-<li class="note">some text...</li>copy
+<li class="note">some text...</li>
 In React we have to use the className attribute instead of the class attribute. With this in mind, let's make the following changes to our Note component:
 
 const Note = ({ note, toggleImportance }) => {
@@ -641,14 +1001,14 @@ const Note = ({ note, toggleImportance }) => {
       <button onClick={toggleImportance}>{label}</button>
     </li>
   )
-}copy
+}
 Class selectors are defined with the .classname syntax:
 
 .note {
   color: grey;
   padding-top: 5px;
   font-size: 15px;
-}copy
+}
 If you now add other li elements to the application, they will not be affected by the style rule above.
 
 
@@ -832,7 +1192,7 @@ const getAll = () => {
     important: true,
   }
   return request.then(response => response.data.concat(nonExisting))
-}copy
+}
 When we try to change the importance of the hardcoded note, we see the following error message in the console. The error says that the backend server responded to our HTTP PUT request with a status code 404 not found.
 
 404 not found error in dev tools
@@ -853,7 +1213,7 @@ axios
   })
   .catch(error => {
     console.log('fail')
-  })copy
+  })
 If the request fails, the event handler registered with the catch method gets called.
 
 The catch method is often utilized by placing it deeper within the promise chain.
@@ -865,7 +1225,7 @@ axios
   .then(response => response.data)
   .then(data => {
     // ...
-  })copy
+  })
 The catch method can be used to define a handler function at the end of a promise chain, which is called once any promise in the chain throws an error and the promise becomes rejected.
 
 axios
@@ -876,7 +1236,7 @@ axios
   })
   .catch(error => {
     console.log('fail')
-  })copy
+  })
 Let's take advantage of this feature. We will place our application's error handler in the App component:
 
 const toggleImportanceOf = id => {
@@ -893,12 +1253,12 @@ const toggleImportanceOf = id => {
       )
       setNotes(notes.filter(n => n.id !== id))
     })
-}copy
+}
 The error message is displayed to the user with the trusty old alert dialog popup, and the deleted note gets filtered out from the state.
 
 Removing an already deleted note from the application's state is done with the array filter method, which returns a new array comprising only the items from the list for which the function that was passed as a parameter returns true for:
 
-notes.filter(n => n.id !== id)copy
+notes.filter(n => n.id !== id)
 It's probably not a good idea to use alert in more serious React applications. We will soon learn a more advanced way of displaying messages and notifications to users. There are situations, however, where a simple, battle-tested method like alert can function as a starting point. A more advanced method could always be added in later, given that there's time and energy for it.
 
 The code for the current state of our application can be found in the part2-6 branch on GitHub.
@@ -1054,14 +1414,14 @@ export default {
   getAll: getAll, 
   create: create, 
   update: update 
-}copy
+}
 The module exports the following, rather peculiar looking, object:
 
 { 
   getAll: getAll, 
   create: create, 
   update: update 
-}copy
+}
 The labels to the left of the colon in the object definition are the keys of the object, whereas the ones to the right of it are variables that are defined inside the module.
 
 Since the names of the keys and the assigned variables are the same, we can write the object definition with a more compact syntax:
@@ -1070,7 +1430,7 @@ Since the names of the keys and the assigned variables are the same, we can writ
   getAll, 
   create, 
   update 
-}copy
+}
 As a result, the module definition gets simplified into the following form:
 
 import axios from 'axios'
@@ -1092,22 +1452,22 @@ const update = (id, newObject) => {
 }
 
 export default { getAll, create, update }
-copy
+
 In defining the object using this shorter notation, we make use of a new feature that was introduced to JavaScript through ES6, enabling a slightly more compact way of defining objects using variables.
 
 To demonstrate this feature, let's consider a situation where we have the following values assigned to variables:
 
 const name = 'Leevi'
-const age = 0copy
+const age = 0
 In older versions of JavaScript we had to define an object like this:
 
 const person = {
   name: name,
   age: age
-}copy
+}
 However, since both the property fields and the variable names in the object are the same, it's enough to simply write the following in ES6 JavaScript:
 
-const person = { name, age }copy
+const person = { name, age }
 The result is identical for both expressions. They both create an object with a name property with the value Leevi and an age property with the value 0.
 */
 /**/
@@ -1593,14 +1953,14 @@ export default {
   getAll: getAll, 
   create: create, 
   update: update 
-}copy
+}
 The module returns an object that has three functions (getAll, create, and update) as its properties that deal with notes. The functions directly return the promises returned by the axios methods.
 
 The App component uses import to get access to the module:
 
 import noteService from './services/notes'
 
-const App = () => {copy
+const App = () => {
 The functions of the module can be used directly with the imported variable noteService as follows:
 
 const App = () => {
@@ -1643,14 +2003,14 @@ const App = () => {
   // ...
 }
 
-export default Appcopy
+export default App
 We could take our implementation a step further. When the App component uses the functions, it receives an object that contains the entire response for the HTTP request:
 
 noteService
   .getAll()
   .then(response => {
     setNotes(response.data)
-  })copy
+  })
 The App component only uses the response.data property of the response object.
 
 The module would be much nicer to use if, instead of the entire HTTP response, we would only get the response data. Using the module would then look like this:
@@ -1659,7 +2019,7 @@ noteService
   .getAll()
   .then(initialNotes => {
     setNotes(initialNotes)
-  })copy
+  })
 We can achieve this by changing the code in the module as follows (the current code contains some copy-paste, but we will tolerate that for now):
 
 import axios from 'axios'
@@ -1684,13 +2044,13 @@ export default {
   getAll: getAll, 
   create: create, 
   update: update 
-}copy
+}
 We no longer return the promise returned by axios directly. Instead, we assign the promise to the request variable and call its then method:
 
 const getAll = () => {
   const request = axios.get(baseUrl)
   return request.then(response => response.data)
-}copy
+}
 The last row in our function is simply a more compact expression of the same code as shown below:
 
 const getAll = () => {
@@ -1698,7 +2058,7 @@ const getAll = () => {
   return request.then(response => {
     return response.data
   })
-}copy
+}
 The modified getAll function still returns a promise, as the then method of a promise also returns a promise.
 
 After defining the parameter of the then method to directly return response.data, we have gotten the getAll function to work like we wanted it to. When the HTTP request is successful, the promise returns the data sent back in the response from the backend.
@@ -1743,7 +2103,7 @@ const App = () => {
   }
 
   // ...
-}copy
+}
 This is all quite complicated and attempting to explain it may just make it harder to understand. The internet is full of material discussing the topic, such as this one.
 
 The "Async and performance" book from the You do not know JS book series explains the topic well, but the explanation is many pages long.
@@ -1878,7 +2238,7 @@ const Note = ({ note, toggleImportance }) => {
       <button onClick={toggleImportance}>{label}</button>
     </li>
   )
-}copy
+}
 We add a button to the component and assign its event handler as the toggleImportance function passed in the component's props.
 
 The App component defines an initial version of the toggleImportanceOf event handler function and passes it to every Note component:
@@ -1916,18 +2276,18 @@ const App = () => {
       // ...
     </div>
   )
-}copy
+}
 Notice how every note receives its own unique event handler function since the id of every note is unique.
 
 E.g., if note.id is 3, the event handler function returned by toggleImportance(note.id) will be:
 
-() => { console.log('importance of 3 needs to be toggled') }copy
+() => { console.log('importance of 3 needs to be toggled') }
 A short reminder here. The string printed by the event handler is defined in a Java-like manner by adding the strings:
 
-console.log('importance of ' + id + ' needs to be toggled')copy
+console.log('importance of ' + id + ' needs to be toggled')
 The template string syntax added in ES6 can be used to write similar strings in a much nicer way:
 
-console.log(`importance of ${id} needs to be toggled`)copy
+console.log(`importance of ${id} needs to be toggled`)
 We can now use the "dollar-bracket"-syntax to add parts to the string that will evaluate JavaScript expressions, e.g. the value of a variable. Note that we use backticks in template strings instead of quotation marks used in regular JavaScript strings.
 
 Individual notes stored in the json-server backend can be modified in two different ways by making HTTP requests to the note's unique URL. We can either replace the entire note with an HTTP PUT request or only change some of the note's properties with an HTTP PATCH request.
@@ -1942,7 +2302,7 @@ const toggleImportanceOf = id => {
   axios.put(url, changedNote).then(response => {
     setNotes(notes.map(note => note.id === id ? response.data : note))
   })
-}copy
+}
 Almost every line of code in the function body contains important details. The first line defines the unique URL for each note resource based on its id.
 
 The array find method is used to find the note we want to modify, and we then assign it to the note variable.
@@ -1951,7 +2311,7 @@ After this, we create a new object that is an exact copy of the old note, apart 
 
 The code for creating the new object that uses the object spread syntax may seem a bit strange at first:
 
-const changedNote = { ...note, important: !note.important }copy
+const changedNote = { ...note, important: !note.important }
 In practice, { ...note } creates a new object with copies of all the properties from the note object. When we add properties inside the curly braces after the spread object, e.g. { ...note, important: true }, then the value of the important property of the new object will be true. In our example, the important property gets the negation of its previous value in the original object.
 
 There are a few things to point out. Why did we make a copy of the note object we wanted to modify when the following code also appears to work?
@@ -1960,7 +2320,7 @@ const note = notes.find(n => n.id === id)
 note.important = !note.important
 
 axios.put(url, note).then(response => {
-  // ...copy
+  // ...
 This is not recommended because the variable note is a reference to an item in the notes array in the component's state, and as we recall we must never mutate state directly in React.
 
 It's also worth noting that the new object changedNote is only a so-called shallow copy, meaning that the values of the new object are the same as the values of the old object. If the values of the old object were objects themselves, then the copied values in the new object would reference the same objects that were in the old object.
@@ -1971,10 +2331,10 @@ The callback function sets the component's notes state to a new array that conta
 
 axios.put(url, changedNote).then(response => {
   setNotes(notes.map(note => note.id === id ? response.data : note))
-})copy
+})
 This is accomplished with the map method:
 
-notes.map(note => note.id === id ? response.data : note)copy
+notes.map(note => note.id === id ? response.data : note)
 The map method creates a new array by mapping every item from the old array into an item in the new array. In our example, the new array is created conditionally so that if note.id === id is true; the note object returned by the server is added to the array. If the condition is false, then we simply copy the item from the old array into the new array instead.
 
 This map trick may seem a bit strange at first, but it's worth spending some time wrapping your head around it. We will be using this method many times throughout the course.
@@ -2190,7 +2550,7 @@ const addNote = event => {
     .then(response => {
       console.log(response)
     })
-}copy
+}
 We create a new object for the note but omit the id property since it's better to let the server generate ids for our resources.
 
 The object is sent to the server using the axios post method. The registered event handler logs the response that is sent back from the server to the console.
@@ -2228,7 +2588,7 @@ const addNote = event => {
       setNotes(notes.concat(response.data))
       setNewNote('')
     })
-}copy
+}
 The new note returned by the backend server is added to the list of notes in our application's state in the customary way of using the setNotes function and then resetting the note creation form. An important detail to remember is that the concat method does not change the component's original state, but instead creates a new copy of the list.
 
 Once the data returned by the server starts to have an effect on the behavior of our web applications, we are immediately faced with a whole new set of challenges arising from, for instance, the asynchronicity of communication. This necessitates new debugging strategies, console logging and other means of debugging become increasingly more important. We must also develop a sufficient understanding of the principles of both the JavaScript runtime and React components. Guessing won't be enough.
@@ -2494,7 +2854,7 @@ Let's remove the fetching of data from main.jsx. Since we're going to be retriev
 import ReactDOM from "react-dom/client";
 import App from "./App";
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);copy
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 The App component changes as follows:
 
 import { useState, useEffect } from 'react'
@@ -2518,7 +2878,7 @@ const App = () => {
   console.log('render', notes.length, 'notes')
 
   // ...
-}copy
+}
 We have also added a few helpful prints, which clarify the progression of the execution.
 
 This is printed to the console:
@@ -2526,7 +2886,7 @@ This is printed to the console:
 render 0 notes
 effect
 promise fulfilled
-render 3 notescopy
+render 3 notes
 First, the body of the function defining the component is executed and the component is rendered for the first time. At this point render 0 notes is printed, meaning data hasn't been fetched from the server yet.
 
 The following function, or effect in React parlance:
@@ -2539,13 +2899,13 @@ The following function, or effect in React parlance:
       console.log('promise fulfilled')
       setNotes(response.data)
     })
-}copy
+}
 is executed immediately after rendering. The execution of the function results in effect being printed to the console, and the command axios.get initiates the fetching of data from the server as well as registers the following function as an event handler for the operation:
 
 response => {
   console.log('promise fulfilled')
   setNotes(response.data)
-})copy
+})
 When data arrives from the server, the JavaScript runtime calls the function registered as the event handler, which prints promise fulfilled to the console and stores the notes received from the server into the state using the function setNotes(response.data).
 
 As always, a call to a state-updating function triggers the re-rendering of the component. As a result, render 3 notes is printed to the console, and the notes fetched from the server are rendered to the screen.
@@ -2559,7 +2919,7 @@ useEffect(() => {
       console.log('promise fulfilled')
       setNotes(response.data)
     })
-}, [])copy
+}, [])
 Let's rewrite the code a bit differently.
 
 const hook = () => {
@@ -2572,7 +2932,7 @@ const hook = () => {
     })
 }
 
-useEffect(hook, [])copy
+useEffect(hook, [])
 Now we can see more clearly that the function useEffect takes two parameters. The first is a function, the effect itself. According to the documentation:
 
 By default, effects run after every completed render, but you can choose to fire it only when certain values have changed.
@@ -2597,7 +2957,7 @@ useEffect(() => {
 
   const promise = axios.get('http://localhost:3001/notes')
   promise.then(eventHandler)
-}, [])copy
+}, [])
 A reference to an event handler function is assigned to the variable eventHandler. The promise returned by the get method of Axios is stored in the variable promise. The registration of the callback happens by giving the eventHandler variable, referring to the event-handler function, as an argument to the then method of the promise. It isn't usually necessary to assign functions and promises to variables, and a more compact way of representing things, as seen below, is sufficient.
 
 useEffect(() => {
@@ -2608,7 +2968,7 @@ useEffect(() => {
       console.log('promise fulfilled')
       setNotes(response.data)
     })
-}, [])copy
+}, [])
 We still have a problem with our application. When adding new notes, they are not stored on the server.
 
 The code for the application, as described so far, can be found in full on github, on branch part2-4.
@@ -3146,7 +3506,7 @@ const promise = axios.get('http://localhost:3001/notes')
 console.log(promise)
 
 const promise2 = axios.get('http://localhost:3001/foobar')
-console.log(promise2)copy
+console.log(promise2)
 If you open http://localhost:5173/ in the browser, this should be printed to the console
 
 promises printed to console
@@ -3171,7 +3531,7 @@ const promise = axios.get('http://localhost:3001/notes')
 
 promise.then(response => {
   console.log(response)
-})copy
+})
 The following is printed to the console:
 
 json object data printed to console
@@ -3182,7 +3542,7 @@ Storing the promise object in a variable is generally unnecessary, and it's inst
 axios.get('http://localhost:3001/notes').then(response => {
   const notes = response.data
   console.log(notes)
-})copy
+})
 The callback function now takes the data contained within the response, stores it in a variable, and prints the notes to the console.
 
 A more readable way to format chained method calls is to place each call on its own line:
@@ -3192,7 +3552,7 @@ axios
   .then(response => {
     const notes = response.data
     console.log(notes)
-  })copy
+  })
 The data returned by the server is plain text, basically just one long string. The axios library is still able to parse the data into a JavaScript array, since the server has specified that the data format is application/json; charset=utf-8 (see the previous image) using the content-type header.
 
 We can finally begin using the data fetched from the server.
@@ -3206,7 +3566,7 @@ import App from './App'
 axios.get('http://localhost:3001/notes').then(response => {
   const notes = response.data
   ReactDOM.createRoot(document.getElementById('root')).render(<App notes={notes} />)
-})copy
+})
 This method could be acceptable in some circumstances, but it's somewhat problematic. Let's instead move the fetching of the data into the App component.
 
 What's not immediately obvious, however, is where the command axios.get should be placed within the component.
@@ -3344,12 +3704,12 @@ Nowadays, practically all JavaScript projects are defined using the node package
     "globals": "^15.14.0",
     "vite": "^6.0.5"
   }
-}copy
+}
 At this point, the dependencies part is of most interest to us as it defines what dependencies, or external libraries, the project has.
 
 We now want to use axios. Theoretically, we could define the library directly in the package.json file, but it is better to install it from the command line.
 
-npm install axioscopy
+npm install axios
 NB npm-commands should always be run in the project root directory, which is where the package.json file can be found.
 
 Axios is now included among the other dependencies:
@@ -3371,12 +3731,12 @@ Axios is now included among the other dependencies:
     "react-dom": "^18.3.1"
   },
   // ...
-}copy
+}
 In addition to adding axios to the dependencies, the npm install command also downloaded the library code. As with other dependencies, the code can be found in the node_modules directory located in the root. As one might have noticed, node_modules contains a fair amount of interesting stuff.
 
 Let's make another addition. Install json-server as a development dependency (only used during development) by executing the command:
 
-npm install json-server --save-devcopy
+npm install json-server --save-dev
 and making a small addition to the scripts part of the package.json file:
 
 {
@@ -3388,10 +3748,10 @@ and making a small addition to the scripts part of the package.json file:
     "preview": "vite preview",
     "server": "json-server -p 3001 db.json"
   },
-}copy
+}
 We can now conveniently, without parameter definitions, start the json-server from the project root directory with the command:
 
-npm run servercopy
+npm run server
 We will get more familiar with the npm tool in the third part of the course.
 
 NB The previously started json-server must be terminated before starting a new one; otherwise, there will be trouble:
@@ -3406,13 +3766,13 @@ As we can see, the application is not able to bind itself to the port. The reaso
 We used the command npm install twice, but with slight differences:
 
 npm install axios
-npm install json-server --save-devcopy
+npm install json-server --save-dev
 There is a fine difference in the parameters. axios is installed as a runtime dependency of the application because the execution of the program requires the existence of the library. On the other hand, json-server was installed as a development dependency (--save-dev), since the program itself doesn't require it. It is used for assistance during software development. There will be more on different dependencies in the next part of the course.
 */
 /**/
 ////Json server F*CKKK 6647
 //1) npm install json-server --save-dev
-//2) in packager.json/scripts add:  
+//2) in package.json/scripts add:  
 //   "server": "json-server -p 3001 db.json"
 //   db.json created in the root dir, and fill with json lol
 //3) npm run server
@@ -3477,7 +3837,7 @@ xhttp.onreadystatechange = function() {
 }
 
 xhttp.open('GET', '/data.json', true)
-xhttp.send()copy
+xhttp.send()
 Right at the beginning, we register an event handler to the xhttp object representing the HTTP request, which will be called by the JavaScript runtime whenever the state of the xhttp object changes. If the change in state means that the response to the request has arrived, then the data is handled accordingly.
 
 It is worth noting that the code in the event handler is defined before the request is sent to the server. Despite this, the code within the event handler will be executed at a later point in time. Therefore, the code does not execute synchronously "from top to bottom", but does so asynchronously. JavaScript calls the event handler that was registered for the request at some point.
@@ -3491,7 +3851,7 @@ List<Note> notes = request.get(url);
 
 notes.forEach(m => {
   System.out.println(m.content);
-});copy
+});
 In Java, the code executes line by line and stops to wait for the HTTP request, which means waiting for the command request.get(...) to finish. The data returned by the command, in this case the notes, are then stored in a variable, and we begin manipulating the data in the desired manner.
 
 In contrast, JavaScript engines, or runtime environments follow the asynchronous model. In principle, this requires all IO operations (with some exceptions) to be executed as non-blocking. This means that code execution continues immediately after calling an IO function, without waiting for it to return.
@@ -3517,7 +3877,7 @@ const App = (props) => {
   }, 5000)
 
   // ...
-}copy
+}
 everything works normally for five seconds. When the function defined as the parameter of setTimeout is executed, the browser page becomes unresponsive for the duration of the long loop. The page freezes completely, meaning you cannot click its buttons or use any other functionality.
 
 For the browser to remain responsive, i.e., to be able to continuously react to user operations with sufficient speed, the code logic needs to be such that no single computation can take too long.
@@ -4126,7 +4486,7 @@ First, we create a new object for the note called noteObject that will receive i
 The new note is added to the list of notes using the concat array method, introduced in part 1:
 
 setNotes(notes.concat(noteObject))
-The method does not mutate the original notes array, but rather creates a new copy of the array with the new item added to the end. This is important since we must never mutate state directly in React!
+The method does not mutate the original notes array, but rather creates a new copia of the array with the new item added to the end. This is important since we must never mutate state directly in React!
 
 The event handler also resets the value of the controlled input element by calling the setNewNote function of the newNote state:
 

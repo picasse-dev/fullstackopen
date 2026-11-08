@@ -1,0 +1,14 @@
+{
+  "notes": [
+    {
+      "id": "1",
+      "content": "HTML is easy (this shit comes from a server)",
+      "important": true
+    },
+    {
+      "id": "2",
+      "content": "aaaa",
+      "important": true
+    }
+  ]
+}
