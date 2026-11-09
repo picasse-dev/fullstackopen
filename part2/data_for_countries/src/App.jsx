@@ -1,3 +1,22 @@
+/*
+2.18* Data for countries, step 1
+
+At https://studies.cs.helsinki.fi/restcountries/ you can find a service that offers a lot of information related to different countries in a so-called machine-readable format via the REST API. Make an application that allows you to view information from different countries.
+
+The user interface is very simple. The country to be shown is found by typing a search query into the search field.
+
+If there are too many (over 10) countries that match the query, then the user is prompted to make their query more specific:
+too many matches screenshot
+
+If there are ten or fewer countries, but more than one, then all countries matching the query are shown:
+matching countries in a list screenshot
+
+When there is only one country matching the query, then the basic data of the country (eg. capital and area), its flag and the languages spoken are shown:
+flag and additional attributes screenshot
+
+NB: It is enough that your application works for most countries. Some countries, like Sudan, can be hard to support since the name of the country is part of the name of another country, South Sudan. You don't need to worry about these edge cases.
+*/
+/*
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
@@ -50,8 +69,8 @@ const App = () => {
             countries.map(country => 
               <div key = {country.name.common}>
                 <h1>{country.name.common}</h1>
-                <p>Capital {country.capital}</p>
-                <p>Area {country.area} m2</p>
+                <p>Capital: {country.capital}</p>
+                <p>Area: {country.area} m2</p>
                 <h2>Languages</h2>
                 <ul>
                   {Object.values(country.languages).map((language, index) => 
@@ -77,8 +96,77 @@ modularizar
 axioa service
 fix useState([])
 manejo errores
+area number in m2 ex 1.192.168 m2
 
 Object.values convierte un objeto en array pues .> countries[0].languages es un objeto que contiene varia data y no se puede .map //F*CKKK
 console.dir('countries: ', countries)//.dir: Muestra el objeto con la jerarquia completa
-
 */
+
+////Implementing the changes mentioned before:
+/**/
+import { useState, useEffect } from 'react'
+import CountryFilter from './components/CountryFilter'
+import CountryList from './components/CountryList'
+import countryService from './services/countryService'
+
+const App = () => {
+
+  const [data, setData] = useState([])
+  const [value, setValue] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const fetchCountries = async () => {
+      try {
+        const countries = await countryService.getAll(controller.signal)
+        setData(countries)
+
+      } catch (error) {
+        if (controller.signal.aborted) return
+
+        console.error('Error fetching countries:', error)
+        setError('Unable to retrieve countries from the server.')
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+
+      }
+    }
+
+    fetchCountries()
+
+    return () => controller.abort()
+  }, [])
+
+  const handleChange = (event) => {
+    setValue(event.target.value)
+  }
+
+  const countries = data.filter(country =>
+    country.name.common
+      .toLowerCase()
+      .includes(value.trim().toLowerCase())
+  )
+
+  return (
+    <>
+      <CountryFilter
+        value={value}
+        onChange={handleChange}
+      />
+
+      {loading ? (
+        <p>Loading countries...</p>
+      ) : error ? (
+        <p>{error}</p>
+      ) : (
+        <CountryList countries={countries} />
+      )}
+    </>
+  )
+}
+export default App
+/**/
