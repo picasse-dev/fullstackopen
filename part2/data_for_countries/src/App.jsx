@@ -1,4 +1,124 @@
 /*
+2.19*: Data for countries, step 2
+
+There is still a lot to do in this part, so don't get stuck on this exercise!
+
+Improve on the application in the previous exercise, such that when the names of multiple countries are shown on the page there is a button next to the name of the country, which when pressed shows the view for that country:
+attach show buttons for each country feature
+
+In this exercise, it is also enough that your application works for most countries. Countries whose name appears in the name of another country, like Sudan, can be ignored.
+
+*/
+/**/
+import { useState, useEffect } from 'react'
+import CountryFilter from './components/CountryFilter'
+import CountryList2 from './components/CountryList2'
+import countryService from './services/countryService'
+
+const App = () => {
+
+  const [data, setData] = useState([])
+  const [value, setValue] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const fetchCountries = async () => {
+      try {
+        const countries = await countryService.getAll(controller.signal)
+        setData(countries)
+
+      } catch (error) {
+        if (controller.signal.aborted) return
+
+        console.error('Error fetching countries:', error)
+        setError('Unable to retrieve countries from the server.')
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+
+      }
+    }
+
+    fetchCountries()
+
+    return () => controller.abort()
+  }, [])
+
+  const handleChange = (event) => {
+    setValue(event.target.value)
+  }
+
+  const countries = data.filter(country =>
+    country.name.common
+      .toLowerCase()
+      .includes(value.trim().toLowerCase())
+  )
+
+  return (
+    <>
+      <CountryFilter
+        value={value}
+        onChange={handleChange}
+      />
+
+      {loading ? (
+        <p>Loading countries...</p>
+      ) : error ? (
+        <p>{error}</p>
+      ) : (
+        <CountryList2 countries={countries} />
+      )}
+    </>
+  )
+}
+export default App
+/**/
+/*
+3. Comparación funcionamiento modulos
+ Característica	   ES Modules	     CommonJS
+Exportación	      export	        module.exports
+Exportación       predeterminada	export default	module.exports
+Importación	      import	        require()
+Desestructuración	import { X }	  const { X } = require()
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 2.18* Data for countries, step 1
 
 At https://studies.cs.helsinki.fi/restcountries/ you can find a service that offers a lot of information related to different countries in a so-called machine-readable format via the REST API. Make an application that allows you to view information from different countries.
@@ -103,7 +223,7 @@ console.dir('countries: ', countries)//.dir: Muestra el objeto con la jerarquia 
 */
 
 ////Implementing the changes mentioned before:
-/**/
+/*
 import { useState, useEffect } from 'react'
 import CountryFilter from './components/CountryFilter'
 import CountryList from './components/CountryList'
