@@ -1,5 +1,5 @@
 // ==========================================
-// 2. COUNTRY COMPONENT
+// 2. COUNTRY COMPONENT (copias este para hacer el 2.20, creo que con solo este puede hacerse lo del weather)
 // ==========================================
 
 const Country = ({ country }) => {

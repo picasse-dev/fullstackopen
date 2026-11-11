@@ -1,4 +1,140 @@
 /*
+2.20*: Data for countries, step 3
+
+Add to the view showing the data of a single country, the weather report for the capital of that country. There are dozens of providers for weather data. One suggested API is https://openweathermap.org. Note that it might take some minutes until a generated API key is valid.
+weather report added feature
+
+If you use Open weather map, here is the description for how to get weather icons.
+
+NB: In some browsers (such as Firefox) the chosen API might send an error response, which indicates that HTTPS encryption is not supported, although the request URL starts with http://. This issue can be fixed by completing the exercise using Chrome.
+
+NB: You need an api-key to use almost every weather service. Do not save the api-key to source control! Nor hardcode the api-key to your source code. Instead use an environment variable to save the key in this exercise. In real-life applications, it's considered insecure sending these keys directly from the browser, as anyone who can open the dev console would be able to intercept your keys! We will focus on implementing a separate backend in the next part of the course.
+
+Assuming the api-key is 54l41n3n4v41m34rv0, when the application is started like so:
+
+export VITE_SOME_KEY=54l41n3n4v41m34rv0 && npm run dev // For Linux/macOS Bash
+($env:VITE_SOME_KEY="54l41n3n4v41m34rv0") -and (npm run dev) // For Windows PowerShell
+set "VITE_SOME_KEY=54l41n3n4v41m34rv0" && npm run dev // For Windows cmd.exe
+copy
+
+you can access the value of the key from the import.meta.env object:
+
+const api_key = import.meta.env.VITE_SOME_KEY
+// variable api_key now has the value set in startup
+copy
+
+NB: To prevent accidentally leaking environment variables to the client, only variables prefixed with VITE_ are exposed to Vite.
+
+Also remember that if you make changes to environment variables, you need to restart the development server for the changes to take effect.
+
+This was the last exercise of this part of the course. It's time to push your code to GitHub and mark all of your finished exercises to the exercise submission system.
+*/
+/**/
+import { useState, useEffect } from 'react'
+import CountryFilter from './components/CountryFilter'
+import CountryList2 from './components/CountryList2'
+import countryService from './services/countryService'
+
+const App = () => {
+
+  const [data, setData] = useState([])
+  const [value, setValue] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const fetchCountries = async () => {
+      try {
+        const countries = await countryService.getAll(controller.signal)
+        setData(countries)
+
+      } catch (error) {
+        if (controller.signal.aborted) return
+
+        console.error('Error fetching countries:', error)
+        setError('Unable to retrieve countries from the server.')
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+
+      }
+    }
+
+    fetchCountries()
+
+    return () => controller.abort()
+  }, [])
+
+  const handleChange = (event) => {
+    setValue(event.target.value)
+  }
+
+  const countries = data.filter(country =>
+    country.name.common
+      .toLowerCase()
+      .includes(value.trim().toLowerCase())
+  )
+
+  return (
+    <>
+      <CountryFilter
+        value={value}
+        onChange={handleChange}
+      />
+
+      {loading ? (
+        <p>Loading countries...</p>
+      ) : error ? (
+        <p>{error}</p>
+      ) : (
+        <CountryList2 countries={countries} />
+      )}
+    </>
+  )
+}
+export default App
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 2.19*: Data for countries, step 2
 
 There is still a lot to do in this part, so don't get stuck on this exercise!
@@ -9,7 +145,7 @@ attach show buttons for each country feature
 In this exercise, it is also enough that your application works for most countries. Countries whose name appears in the name of another country, like Sudan, can be ignored.
 
 */
-/**/
+/*
 import { useState, useEffect } from 'react'
 import CountryFilter from './components/CountryFilter'
 import CountryList2 from './components/CountryList2'
