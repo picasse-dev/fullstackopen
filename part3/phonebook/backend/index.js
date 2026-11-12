@@ -1,9 +1,25 @@
 /*
-3.3: Phonebook backend step 3
+3.6: Phonebook backend step 6
 
-Implement the functionality for displaying the information for a single phonebook entry. The url for getting the data for a person with the id 5 should be http://localhost:3001/api/persons/5
+Implement error handling for creating new entries. The request is not allowed to succeed, if:
 
-If an entry for the given id is not found, the server has to respond with the appropriate status code.
+    The name or number is missing
+    The name already exists in the phonebook
+
+Respond to requests like these with the appropriate status code, and also send back information that explains the reason for the error, e.g.:
+
+{ error: 'name must be unique' }
+*/
+/**/
+
+/**/
+
+/*
+3.5: Phonebook backend step 5
+
+Expand the backend so that new phonebook entries can be added by making HTTP POST requests to the address http://localhost:3001/api/persons.
+
+Generate a new id for the phonebook entry with the Math.random function. Use a big enough range for your random values so that the likelihood of creating duplicate ids is small.
 */
 /**/
 const express = require('express')
@@ -47,7 +63,7 @@ app.get('/api/persons/:id',(request, response) => {
   const id = request.params.id
   const person = persons.find(person => person.id === id)
   if(!person) return response.status(404).end()
-  response.json(person).status(204).end()
+  response.json(person)
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -56,6 +72,170 @@ app.delete('/api/persons/:id', (request, response) => {
   if(!deletedPerson) return response.status(404).end()
   persons = persons.filter(person => person !== deletedPerson)
   response.status(204).end()
+})
+
+const newId = () => Math.floor(Math.random()*1e15).toString()
+
+app.post('/api/persons',(request, response) => {
+  const body = request.body
+  if(!body.name || !body.number) return response.status(400).json({
+    error: 'name or number missing'
+  })
+
+  const person = {
+    id: newId(),
+    name: body.name,
+    number: body.number
+  }
+
+  persons = persons.concat(person)
+
+  response.json(person)
+})
+
+const PORT = 3001
+app.listen(PORT,() => {
+    console.log(`Server running on port ${PORT}`)
+})
+/**/
+
+/*
+3.4: Phonebook backend step 4
+
+Implement functionality that makes it possible to delete a single phonebook entry by making an HTTP DELETE request to the unique URL of that phonebook entry.
+
+Test that your functionality works with either Postman or the Visual Studio Code REST client.
+*/
+/*
+const express = require('express')
+const app = express()
+app.use(express.json())
+
+let persons = [
+    { 
+      "id": "1",
+      "name": "Arto Hellas", 
+      "number": "040-123456"
+    },
+    { 
+      id: "2", //Crazy but ok
+      name: "Ada Lovelace", 
+      number: "39-44-5323523"
+    },
+    { 
+      "id": "3",
+      "name": "Dan Abramov", 
+      "number": "12-43-234345"
+    },
+    { 
+      "id": "4",
+      "name": "Mary Poppendieck", 
+      "number": "39-23-6423122"
+    }
+]
+
+app.get('/api/persons',(request, response) => {
+    response.json(persons)
+})
+
+app.get('/api/persons/info',(request, response) => {
+  const date = new Date()
+  const info = `Phonebook has info for ${persons.length} people \n ${date}`
+  response.type('text/plain').send(info) //Texto plano para conservar el \n
+})
+
+app.get('/api/persons/:id',(request, response) => {
+  const id = request.params.id
+  const person = persons.find(person => person.id === id)
+  if(!person) return response.status(404).end()
+  response.json(person)
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+  const id = request.params.id
+  const deletedPerson = persons.find(person => person.id === id)
+  if(!deletedPerson) return response.status(404).end()
+  persons = persons.filter(person => person !== deletedPerson)
+  response.status(204).end()
+})
+
+const PORT = 3001
+app.listen(PORT,() => {
+    console.log(`Server running on port ${PORT}`)
+})
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+3.3: Phonebook backend step 3
+
+Implement the functionality for displaying the information for a single phonebook entry. The url for getting the data for a person with the id 5 should be http://localhost:3001/api/persons/5
+
+If an entry for the given id is not found, the server has to respond with the appropriate status code.
+*/
+/*
+const express = require('express')
+const app = express()
+app.use(express.json())
+
+let persons = [
+    { 
+      "id": "1",
+      "name": "Arto Hellas", 
+      "number": "040-123456"
+    },
+    { 
+      id: "2", //Crazy but ok
+      name: "Ada Lovelace", 
+      number: "39-44-5323523"
+    },
+    { 
+      "id": "3",
+      "name": "Dan Abramov", 
+      "number": "12-43-234345"
+    },
+    { 
+      "id": "4",
+      "name": "Mary Poppendieck", 
+      "number": "39-23-6423122"
+    }
+]
+
+app.get('/api/persons',(request, response) => {
+    response.json(persons)
+})
+
+app.get('/api/persons/info',(request, response) => {
+  const date = new Date()
+  const info = `Phonebook has info for ${persons.length} people \n ${date}`
+  response.type('text/plain').send(info) //Texto plano para conservar el \n
+})
+
+app.get('/api/persons/:id',(request, response) => {
+  const id = request.params.id
+  const person = persons.find(person => person.id === id)
+  if(!person) return response.status(404).end()
+  response.json(person)
 })
 
 const PORT = 3001

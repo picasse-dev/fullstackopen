@@ -13,3 +13,12 @@ content-type: application/json
 ### 3.4
 DELETE http://localhost:3001/api/persons/2
 const-type: aplicattion/json
+
+### 3.5
+POST http://localhost:3001/api/persons
+content-type: application/json
+
+{
+    "name":"caracolo",
+    "number":"123-456-7890"
+}
