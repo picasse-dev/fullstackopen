@@ -100,6 +100,76 @@ app.post('/api/persons',(request, response) => {
   response.status(201).json(person)
 })
 
+app.put('/api/persons/:id',(request, response) => {
+
+  const id = request.params.id //Viene de la url del put
+  const body = request.body
+
+  if (
+    !body ||
+    typeof body.name !== 'string' ||
+    typeof body.number !== 'string' ||
+    !body.name.trim() ||
+    !body.number.trim()
+  ) {
+    return response.status(400).json({ //400 Bad Request: los datos enviados son incorrectos.
+      error: 'name or number missing or invalid'
+    })
+  }
+
+  const personExist = persons.find(person => person.id === id)
+  if(!personExist) return response.status(404).json({error:'user id not found'}) //404 Not Found: el recurso que intentas actualizar no existe.
+
+  const updatedPerson = {
+    ...personExist,
+    name: body.name.trim(),
+    number: body.number.trim()
+  }
+
+  persons = persons.map(person =>
+    person.id === id ?
+    updatedPerson :
+    person
+  )
+
+  response.json(updatedPerson)
+})
+
+app.patch('/api/persons/:id',(request, response) => {
+
+  const id = request.params.id //Viene de la url del put
+  const body = request.body
+
+  // Validate only the fields provided
+  if (
+    (body.name !== undefined &&
+      (typeof body.name !== 'string' || !body.name.trim())) ||
+    (body.number !== undefined &&
+      (typeof body.number !== 'string' || !body.number.trim()))
+  ) {
+    return response.status(400).json({
+      error: 'invalid name or number'
+    })
+  }
+
+  const personExist = persons.find(person => person.id === id)
+  if(!personExist) return response.status(404).json({error:'user id not found'}) //404 Not Found: el recurso que intentas actualizar no existe.
+
+  const updatedPerson = { //Claro ahi esta el iio, hay que ser si se envio eso o no y segun eso actualizar
+    ...personExist,
+    name: body.name ? body.name.trim() : personExist.name,
+    number: body.number ? body.number.trim() : personExist.number
+  }
+
+  persons = persons.map(person =>
+    person.id === id ?
+    updatedPerson :
+    person
+  )
+
+  response.json(updatedPerson)
+})
+
 const PORT = 3001
 app.listen(PORT,() => {
     console.log(`Server running on port ${PORT}`)

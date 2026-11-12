@@ -12,7 +12,7 @@ content-type: application/json
 
 ### 3.4
 DELETE http://localhost:3001/api/persons/2
-content-type: aplicattion/json
+content-type: aplication/json
 
 ### 3.5
 POST http://localhost:3001/api/persons
@@ -21,4 +21,29 @@ content-type: application/json
 {
     "name":"chote",
     "number":"123-456-7890"
+}
+
+### extra put
+PUT http://localhost:3001/api/persons/1
+Content-Type: application/json
+
+{ 
+    "name": "Artote Hellote", 
+    "number": "1500"
+}
+
+### extra patch
+PATCH http://localhost:3001/api/persons/1
+Content-Type: application/json
+
+{ 
+    "name": "Artoteee Helloteeeeeee Yeahhh"
+}
+
+### extra patch 2
+PATCH http://localhost:3001/api/persons/1
+Content-Type: application/json
+
+{ 
+    "number": "999999999999"
 }
