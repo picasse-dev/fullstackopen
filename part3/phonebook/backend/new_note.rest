@@ -1,13 +1,8 @@
+### 3.1
 GET http://localhost:3001/api/persons
 content-type: application/json
 
-
-
-###
-POST http://localhost:3001/api/persons
+### 3.2
+GET http://localhost:3001/api/persons/info
 content-type: application/json
 
-{
-    "name": "chote",
-    "number": "616"
-}
