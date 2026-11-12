@@ -1,8 +1,20 @@
 /**/
 /**/
 /**/
+
+
+/*
+Exercises 3.1.-3.6.
+
+NB: Since this is not about the frontend and React, the application is not created with Vite, but with the npm init command, as described earlier in this part of the material.
+
+Do not add the node_modules directory to version control. The npm init command does not automatically create a .gitignore file, so create one in the root of your project and add the line node_modules to it. This way Git will no longer track that directory in version control.
+
+Strong recommendation: When you are working on backend code, always keep an eye on what's going on in the terminal that is running your application.
+
+*/
 /**/
-/**/
+
 /**/
 
 
@@ -241,16 +253,29 @@ app.delete('/api/notes/:id', (request, response) => { //Test this with postman .
   response.status(204).end()
 })
 
-app.post('/api/notes', (request, response) => {
+const generateId = () => {
   const maxId = notes.length > 0
     ? Math.max(...notes.map(note => Number(note.id))) 
     : 0
+  return String(maxId + 1)
+}
 
-  const note = request.body
-  note.id = String(maxId + 1)
+app.post('/api/notes', (request, response) => {
+  const body = request.body
+  if(!body.content){
+    return response.status(400).json({
+      error: 'conent missing'
+    })
+  }
+
+  const note = {
+    content: body.content,
+    important: body.important || false,
+    id: generateId(),
+  }
+
   notes = notes.concat(note)
 
-  console.log(notes)
   response.json(note)
 })
 
