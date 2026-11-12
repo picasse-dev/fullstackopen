@@ -6,3 +6,6 @@ content-type: application/json
 GET http://localhost:3001/api/persons/info
 content-type: application/json
 
+### 3.3
+GET http://localhost:3001/api/persons/1
+content-type: application/json
