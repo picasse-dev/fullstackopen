@@ -796,7 +796,7 @@ node terminal demonstrating json is of type string
 
 The experiment above was done in the interactive node-repl. You can start the interactive node-repl by typing in node in the command line. The repl is particularly useful for testing how commands work while you're writing application code. I highly recommend this!
 */
-////The good way of use express
+////The good way, use express
 /*
 const express = require('express')//common.js modules
 const app = express()
