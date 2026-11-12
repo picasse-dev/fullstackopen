@@ -11,8 +11,143 @@ Respond to requests like these with the appropriate status code, and also send b
 { error: 'name must be unique' }
 */
 /**/
+const express = require('express')
+const app = express()
+app.use(express.json())
 
+let persons = [
+    { 
+      "id": "1",
+      "name": "Arto Hellas", 
+      "number": "040-123456"
+    },
+    { 
+      id: "2", //Crazy but ok
+      name: "Ada Lovelace", 
+      number: "39-44-5323523"
+    },
+    { 
+      "id": "3",
+      "name": "Dan Abramov", 
+      "number": "12-43-234345"
+    },
+    { 
+      "id": "4",
+      "name": "Mary Poppendieck", 
+      "number": "39-23-6423122"
+    }
+]
+
+app.get('/api/persons',(request, response) => {
+    response.json(persons)
+})
+
+app.get('/api/persons/info',(request, response) => {
+  const date = new Date()
+  const info = `Phonebook has info for ${persons.length} people \n ${date}`
+  response.type('text/plain').send(info) //Texto plano para conservar el \n
+})
+
+app.get('/api/persons/:id',(request, response) => {
+  const id = request.params.id
+  const person = persons.find(person => person.id === id)
+  if(!person) return response.status(404).end()
+  response.json(person)
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+  const id = request.params.id
+  const deletedPerson = persons.find(person => person.id === id)
+  if(!deletedPerson) return response.status(404).end()
+  persons = persons.filter(person => person !== deletedPerson)
+  response.status(204).end()
+})
+
+const newId = () => Math.floor(Math.random()*1e15).toString()
+
+app.post('/api/persons',(request, response) => {
+
+  const body = request.body
+
+  if (
+    !body ||
+    typeof body.name !== 'string' ||
+    typeof body.number !== 'string' ||
+    !body.name.trim() ||
+    !body.number.trim()
+  ) {
+    return response.status(400).json({
+      error: 'name or number missing or invalid'
+    })
+  }
+
+  const nameExists = persons.find(
+    person => person.name.trim().toLowerCase() === body.name.trim().toLowerCase()
+  )
+
+  if(nameExists) return response.status(409).json({
+    error: `Error: The name: ${body.name.trim().toLowerCase()} already exists`
+  })
+
+  const person = {
+    id: newId(),
+    name: body.name.trim(),
+    number: body.number.trim()
+  }
+
+  persons = persons.concat(person)
+
+  response.status(201).json(person)
+})
+
+const PORT = 3001
+app.listen(PORT,() => {
+    console.log(`Server running on port ${PORT}`)
+})
 /**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 3.5: Phonebook backend step 5
@@ -21,7 +156,7 @@ Expand the backend so that new phonebook entries can be added by making HTTP POS
 
 Generate a new id for the phonebook entry with the Math.random function. Use a big enough range for your random values so that the likelihood of creating duplicate ids is small.
 */
-/**/
+/**
 const express = require('express')
 const app = express()
 app.use(express.json())
@@ -78,9 +213,6 @@ const newId = () => Math.floor(Math.random()*1e15).toString()
 
 app.post('/api/persons',(request, response) => {
   const body = request.body
-  if(!body.name || !body.number) return response.status(400).json({
-    error: 'name or number missing'
-  })
 
   const person = {
     id: newId(),
@@ -98,6 +230,38 @@ app.listen(PORT,() => {
     console.log(`Server running on port ${PORT}`)
 })
 /**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 3.4: Phonebook backend step 4
@@ -164,6 +328,18 @@ app.listen(PORT,() => {
     console.log(`Server running on port ${PORT}`)
 })
 /**/
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
