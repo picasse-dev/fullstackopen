@@ -47,7 +47,15 @@ app.get('/api/persons/:id',(request, response) => {
   const id = request.params.id
   const person = persons.find(person => person.id === id)
   if(!person) return response.status(404).end()
-  response.json(person)
+  response.json(person).status(204).end()
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+  const id = request.params.id
+  const deletedPerson = persons.find(person => person.id === id)
+  if(!deletedPerson) return response.status(404).end()
+  persons = persons.filter(person => person !== deletedPerson)
+  response.status(204).end()
 })
 
 const PORT = 3001
