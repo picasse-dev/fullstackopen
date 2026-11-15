@@ -1,5 +1,5 @@
 //Ctrl + alt +R also works for send the request
-
+//Rest client extension (install)
 //Esta mierda es sensible a saltos de linea wtf
 #   Parte	            Función
 # POST ...	    Define el método HTTP y la URL.
@@ -24,7 +24,7 @@ Content-Type: application/json; charset=utf-8
     "important": true
 }
 
-###
+### no sending contet 
 POST http://localhost:3001/api/notes/ HTTP/1.1
 content-type: application/json
 
@@ -32,3 +32,13 @@ content-type: application/json
     "name": "sample",
     "time": "Wed, 21 Oct 2015 18:27:50 GMT"
 }
+
+### unknown endpoint
+POST http://localhost:3001/api/notesJAJAJAJA/HOLA
+content-type: application/json
+
+{
+    "content": "unknown endpoint iguess",
+    "important": true
+}
+

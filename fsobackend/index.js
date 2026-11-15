@@ -102,7 +102,94 @@ copy
 You can find the code for our current application in its entirety in the part3-2 branch of this GitHub repository.
 */
 /**/
+//Middleware: Software relacionado al manejo de request y response, en este caso el mas basico e inimaginable, mostrarlos por consola (siempre reciben 3 parametros)
+const express = require('express')//common.js modules
+const app = express()
 
+const requestLogger = (request, response, next) => { //Our Middleware 
+  console.log('Method:', request.method)
+  console.log('Path:  ', request.path)
+  console.log('Body:  ', request.body)
+  console.log('---')
+  next()
+}
+app.use(express.json())//Middleware
+app.use(requestLogger) //Our Middleware Loguea el request que se haga en consola (obviamnete en consola)
+
+let notes = [
+  {
+    id: "1",
+    content: "HTML is easy",
+    important: true
+  },
+  {
+    id: "2",
+    content: "Browser can execute only JavaScript",
+    important: false
+  },
+  {
+    id: "3",
+    content: "GET and POST are the most important methods of HTTP protocol",
+    important: true
+  }
+]
+
+app.get('/api/notes', (request, response) => {
+  response.json(notes)
+})
+
+app.get('/api/notes/:id', (request, response) => {
+  const id = request.params.id //middleware applied
+  const note = notes.find(note => note.id === id)
+  
+  if(note){
+    response.json(note)
+  }else{
+    response.status(404).end()
+  }
+})
+ 
+app.delete('/api/notes/:id', (request, response) => { //Test this with postman .> Delete ( http://localhost:3001/api/notes/1 ), The result should be a 204 status code in the postman console, and the server should not longer contain the note with ID:1
+  const id = request.params.id //middleware applied
+  notes = notes.filter(note => note.id !== id)
+  response.status(204).end()
+})
+
+const generateId = () => {
+  const maxId = notes.length > 0
+  ? Math.max(...notes.map(note => Number(note.id))) 
+  : 0
+  return String(maxId + 1)
+}
+
+app.post('/api/notes', (request, response) => {
+  const body = request.body //middleware applied
+  if(!body.content){
+    return response.status(400).json({
+      error: 'conent missing'
+    })
+  }
+  
+  const note = {
+    content: body.content,
+    important: body.important || false,
+    id: generateId(),
+  }
+  
+  notes = notes.concat(note)
+  
+  response.json(note) 
+})
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknowwwwn endpoint' })
+}
+app.use(unknownEndpoint) //Our Middleware 
+
+const PORT = 3001
+app.listen(PORT, () => {
+  console.log(`Server running on portt ${PORT}`)
+})
 /**/
 
 
@@ -412,7 +499,7 @@ copy
 
 What exactly is happening in that line of code? notes.map(n => Number(n.id)) creates a new array that contains all the ids of the notes in number form. Math.max returns the maximum value of the numbers that are passed to it. However, notes.map(n => Number(n.id)) is an array so it can't directly be given as a parameter to Math.max. The array can be transformed into individual numbers by using the "three dot" spread syntax ....
 */
-/**/
+/*
 const express = require('express')//common.js modules
 const app = express()
 app.use(express.json())
