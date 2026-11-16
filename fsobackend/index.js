@@ -38,20 +38,595 @@
 /**/
 /**/
 
-/**/
-/**/
+/*
+Application to the Internet
+
+Now that the whole stack is ready, let's move our application to Internet.
+
+There is an ever-growing number of services that can be used to host an app on the internet. The developer-friendly services like PaaS (i.e. Platform as a Service) take care of installing the execution environment (eg. Node.js) and could also provide various services such as databases.
+
+For a decade, Heroku was dominating the PaaS scene. Unfortunately the free tier Heroku ended at 27th November 2022. This is very unfortunate for many developers, especially students. Heroku is still very much a viable option if you are willing to spend some money. They also have a student program that provides some free credits.
+
+We are now introducing two services Fly.io and Render. Fly.io offers more flexibility as a service, but it has also recently become paid. Render offers some free compute time, so if you want to complete the course without costs, choose Render. Setting up Render might also be easier in some cases, as Render does not require any installations on your own machine.
+
+There are also some other free hosting options that work well for this course, at least for all parts other than part 11 (CI/CD) which might have one tricky exercise for other platforms.
+
+Some course participants have also used the following services:
+
+    Replit
+    Railway
+    CodeSandBox
+
+If you know easy-to-use and free services for hosting NodeJS, please let us know!
+
+For both Fly.io and Render, we need to change the definition of the port our application uses at the bottom of the index.js file in the backend like so:
+
+const PORT = process.env.PORT || 3001app
+.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
+copy
+
+Now we are using the port defined in the environment variable PORT or port 3001 if the environment variable PORT is undefined. It is possible to configure the application port based on the environment variable both in Fly.io and in Render.
+
+
+
+
+
+
+==========================================
+===     Fly.io                        ===
+==========================================
+
+Note that you may need to give your credit card number to Fly.io!
+
+If you decide to use Fly.io begin by installing their flyctl executable following this guide. After that, you should create a Fly.io account.
+
+Start by authenticating via the command line with the command
+
+fly auth login
+copy
+
+Note if the command fly does not work on your machine, you can try the longer version flyctl. Eg. on MacOS, both forms of the command work.
+
+If you do not get the flyctl to work in your machine, you could try Render (see next section), it does not require anything to be installed in your machine.
+
+Initializing an app happens by running the following command in the root directory of the app
+
+fly launch --no-deploy
+copy
+
+Give the app a name or let Fly.io auto-generate one. Pick a region where the app will be run. Do not create a Postgres database for the app and do not create an Upstash Redis database, since these are not needed.
+
+Fly.io creates a file fly.toml in the root of your app where we can configure it. To get the app up and running we might need to do a small addition to the configuration:
+
+[build]
+
+[env]
+  PORT = "3001" # add this
+
+[http_service]
+  internal_port = 3001 # ensure that this is same as PORT
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+copy
+
+We have now defined in the part [env] that environment variable PORT will get the correct port (defined in part [http_service]) where the app should create the server.
+
+We are now ready to deploy the app to the Fly.io servers. That is done with the following command:
+
+fly deploy
+copy
+
+If all goes well, the app should now be up and running. You can open it in the browser with the command
+
+fly apps open
+copy
+
+A particularly important command is fly logs. This command can be used to view server logs. It is best to keep logs always visible!
+
+Note: Fly may create 2 machines for your app, if it does then the state of the data in your app will be inconsistent between requests, i.e. you would have two machines each with its own notes variable, you could POST to one machine then your next GET could go to another machine. You can check the number of machines by using the command "$ fly scale show", if the COUNT is greater than 1 then you can enforce it to be 1 with the command "$ fly scale count 1". The machine count can also be checked on the dashboard.
+
+Note: In some cases (the cause is so far unknown) running Fly.io commands especially on Windows WSL (Windows Subsystem for Linux) has caused problems. If the following command just hangs
+
+flyctl ping -o personal
+copy
+
+your computer can not for some reason connect to Fly.io. If this happens to you, this describes one possible way to proceed.
+
+If the output of the below command looks like this:
+
+$ flyctl ping -o personal
+35 bytes from fdaa:0:8a3d::3 (gateway), seq=0 time=65.1ms
+35 bytes from fdaa:0:8a3d::3 (gateway), seq=1 time=28.5ms
+35 bytes from fdaa:0:8a3d::3 (gateway), seq=2 time=29.3ms
+...
+copy
+
+then there are no connection problems!
+
+Whenever you make changes to the application, you can take the new version to production with a command
+
+fly deploy
+copy
+
+Render
+
+Note that you may need to give your credit card number to Render!
+
+The following assumes that the sign in has been made with a GitHub account.
+
+After signing in, let us create a new "web service":
+Image showing the option to create a new Web Service
+
+The app repository is then connected to Render:
+Image showing the application repository on Render.
+
+The connection seems to require that the app repository is public.
+
+Next we will define the basic configurations. If the app is not at the root of the repository the Root directory needs to be given a proper value:
+image showing the Root Directory field as optional
+
+After this, the app starts up in the Render. The dashboard tells us the app state and the url where the app is running:
+The top left corner of the image shows the status of the application and its URL
+
+According to the documentation every commit to GitHub should redeploy the app. For some reason this is not always working.
+
+Fortunately, it is also possible to manually redeploy the app:
+Menu with the option to deploy latest commit highlighted
+
+Also, the app logs can be seen in the dashboard:
+Image with the logs tab highlighted on the left corner. On the right side, the application logs
+
+We notice now from the logs that the app has been started in the port 10000. The app code gets the right port through the environment variable PORT so it is essential that the file index.js has been updated in the backend as follows:
+
+const PORT = process.env.PORT || 3001app
+.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
+*/
 /**/
 
 /**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Same origin policy and CORS
+
+The issue lies with a thing called same origin policy. A URL's origin is defined by the combination of protocol (AKA scheme), hostname, and port.
+
+http://example.com:80/index.html
+  
+protocol: http
+host: example.com
+port: 80
+copy
+
+When you visit a website (e.g. http://example.com), the browser issues a request to the server on which the website (example.com) is hosted. The response sent by the server is an HTML file that may contain one or more references to external assets/resources hosted either on the same server that example.com is hosted on or a different website. When the browser sees reference(s) to a URL in the source HTML, it issues a request. If the request is issued using the URL that the source HTML was fetched from, then the browser processes the response without any issues. However, if the resource is fetched using a URL that doesn't share the same origin(scheme, host, port) as the source HTML, the browser will have to check the Access-Control-Allow-origin response header. If it contains * on the URL of the source HTML, the browser will process the response, otherwise the browser will refuse to process it and throws an error.
+
+The same-origin policy is a security mechanism implemented by browsers in order to prevent session hijacking among other security vulnerabilities.
+
+In order to enable legitimate cross-origin requests (requests to URLs that don't share the same origin) W3C came up with a mechanism called CORS(Cross-Origin Resource Sharing). According to Wikipedia:
+
+    Cross-origin resource sharing (CORS) is a mechanism that allows restricted resources (e.g. fonts) on a web page to be requested from another domain outside the domain from which the first resource was served. A web page may freely embed cross-origin images, stylesheets, scripts, iframes, and videos. Certain "cross-domain" requests, notably Ajax requests, are forbidden by default by the same-origin security policy.
+
+The problem is that, by default, the JavaScript code of an application that runs in a browser can only communicate with a server in the same origin. Because our server is in localhost port 3001, while our frontend is in localhost port 5173, they do not have the same origin.
+
+Keep in mind, that same-origin policy and CORS are not specific to React or Node. They are universal principles regarding the safe operation of web applications.
+
+We can allow requests from other origins by using Node's cors middleware.
+
+In your backend repository, install cors with the command
+
+npm install cors
+copy
+
+take the middleware to use and allow for requests from all origins:
+
+const cors = require('cors')
+
+app.use(cors())
+copy
+
+Note: When you are enabling cors, you should think about how you want to configure it. In the case of our application, since the backend is not expected to be visible to the public in the production environment, it may make more sense to only enable cors from a specific origin (e.g. the front end).
+
+Now most of the features in the frontend work! The functionality for changing the importance of notes has not yet been implemented on the backend so naturally that does not yet work in the frontend. We shall fix that later.
+
+You can read more about CORS from Mozilla's page.
+
+The setup of our app now looks as follows:
+diagram of react app and browser
+
+The react app running in the browser now fetches the data from node/express-server that runs in localhost:3001.
+*/
+/*
+////CORS F*CKKK
+1. ¿Qué pasa cuando visitas una página web?
+Imagina que abres esta dirección en tu navegador:
+
+http://example.com
+
+¿Qué sucede realmente?
+1. Tu navegador le pide al servidor de example.com que le entregue la página.
+2. El servidor recibe la petición.
+3. El servidor responde enviando un documento HTML.
+4. El navegador interpreta ese HTML y construye la página que ves.
+Por ejemplo, el servidor podría responder con este HTML:
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mi página</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h1>Hola mundo</h1>
+  <script src="/app.js"></script>
+</body>
+</html>
+
+
+Pero fíjate en algo:
+
+El HTML hace referencia a otros archivos:
+- styles.css: contiene los estilos.
+- app.js: contiene código JavaScript.
+Por lo tanto, el navegador necesita realizar más peticiones para obtener esos archivos.
+
+Es decir, una página web no necesariamente se obtiene mediante una sola petición HTTP.
+2. ¿Qué es un Origin (origen)?
+Aquí empieza lo importante.
+
+Un origen está compuesto por tres elementos:
+Anatomía de una URL
+https://example.com:443/users
+Scheme
+
+https
+
+
+Host
+
+example.com
+
+
+Port
+
+443
+
+
+
+/users es la ruta (path), no forma parte del origen.
+
+Los tres elementos son:
+Elemento	Significado	Ejemplo
+Scheme	Protocolo	http o https
+Host	Dominio o dirección IP	example.com
+Port	Puerto	3000, 5173, 443
+
+Para que dos URLs tengan el mismo origen, deben coincidir los tres elementos.
+
+Veamos algunos ejemplos:
+URL A	URL B	¿Mismo origen?
+http://example.com	http://example.com/users	Sí
+http://example.com	https://example.com	No
+http://example.com	http://api.example.com	No
+http://localhost:3000	http://localhost:5173	No
+http://localhost:3000	http://localhost:3000/users	Sí
+
+Ojo: aunque las dos últimas URLs utilizan localhost, sus puertos son diferentes. Por eso tienen orígenes diferentes.
+3. ¿Qué es Same-Origin Policy?
+Ahora imagina que tienes una página web maliciosa.
+
+Por ejemplo, visitas una página que parece inofensiva, pero contiene JavaScript diseñado para intentar acceder a información privada de otra página donde tienes una sesión iniciada.
+
+Podría intentar acceder a información de tu banco, correo electrónico u otros servicios.
+
+Para evitar que cualquier página pueda leer libremente información de otras páginas, los navegadores implementan un mecanismo de seguridad llamado:
+
+Same-Origin Policy (política del mismo origen).
+
+En términos sencillos:
+El navegador restringe que el JavaScript de una página pueda leer respuestas de otros orígenes sin autorización.
+
+Por ejemplo:
+Página A: tu banco
+bank.com
+
+Contiene información privada de tu cuenta.
+
+Intento de acceso no autorizado
+
+Página B: sitio malicioso
+malicious-site.com
+
+Intenta leer los datos de bank.com mediante JavaScript.
+
+El navegador restringe el acceso.
+
+
+
+Esto ayuda a proteger información privada y reducir riesgos de seguridad.
+
+Importante: Same-Origin Policy no impide todas las peticiones entre diferentes orígenes. Lo que principalmente restringe es el acceso de JavaScript a determinadas respuestas y recursos.
+4. Entonces, ¿qué es CORS?
+Aquí llegamos al punto central.
+
+Imagina que estás desarrollando una aplicación y tienes dos servidores:
+Tu aplicación de desarrollo
+Frontend
+5173
+localhost:5173
+React / Vite
+
+
+Backend
+3001
+localhost:3001
+Node / Express
+
+
+
+El frontend necesita comunicarse con el backend.
+
+Orígenes diferentes
+
+Tu frontend está funcionando en:
+http://localhost:5173
+
+
+Y tu backend está funcionando en:
+http://localhost:3001
+
+
+Ahora imagina que desde React haces esto:
+fetch('http://localhost:3001/api/users')
+  .then(response => response.json())
+  .then(data => console.log(data))
+
+
+¿Qué ocurre?
+1. React intenta consultar el backend.
+2. El navegador detecta que el frontend y backend tienen orígenes diferentes.
+3. El navegador comprueba las reglas CORS aplicables.
+4. Si el servidor no autoriza ese origen, el navegador bloquea el acceso de JavaScript a la respuesta.
+¡Y ahí aparece el famoso error de CORS!
+
+Pero entonces, ¿cómo solucionamos esto?
+
+Utilizando CORS (Cross-Origin Resource Sharing).
+
+CORS es un mecanismo que permite que un servidor indique qué otros orígenes están autorizados para acceder a sus recursos mediante navegadores.
+5. ¿Cómo funciona CORS en la práctica?
+El servidor puede enviar una cabecera HTTP llamada:
+Access-Control-Allow-Origin
+
+
+Esta cabecera le indica al navegador qué origen está autorizado.
+
+Por ejemplo, tu frontend funciona en localhost:5173.
+
+Tu backend puede responder con:
+Access-Control-Allow-Origin: http://localhost:5173
+
+
+Esto significa:
+
+"Estoy permitiendo que el código ejecutado desde http://localhost:5173 pueda acceder a mis respuestas".
+
+También existe:
+Access-Control-Allow-Origin: *
+
+
+El asterisco significa que cualquier origen puede acceder a los recursos permitidos mediante esa política (no es compatible con solicitudes que incluyen credenciales como cookies).
+
+Ojo: CORS no es un sistema de autenticación. Autorizar un origen no significa que cualquier usuario de ese origen tenga permiso para acceder a tus datos.
+6. ¿Cómo implementamos CORS en Express?
+Aquí es donde conecta todo lo que estás estudiando.
+
+El texto menciona que existe un middleware de Node llamado cors.
+
+Primero, lo instalas en tu backend:
+npm install cors
+
+
+Después, lo importas:
+const cors = require('cors')
+
+
+Y lo registras en Express:
+app.use(cors())
+
+
+¡Eso es todo!
+
+Con esa configuración básica, Express permite solicitudes CORS desde cualquier origen.
+
+Sin embargo, normalmente es mejor especificar qué frontend puede acceder:
+app.use(cors({
+  origin: 'http://localhost:5173'
+}))
+
+
+Ahora únicamente autorizas ese origen mediante la política CORS.
+
+Tu backend completo podría verse así:
+const express = require('express')
+const cors = require('cors')
+
+const app = express()
+
+// Middlewares
+app.use(express.json())
+
+app.use(cors({
+  origin: 'http://localhost:5173'
+}))
+
+// Routes
+app.get('/api/users', (req, res) => {
+  res.json([
+    { name: 'Sebastian', age: 25 }
+  ])
+})
+
+app.listen(3001, () => {
+  console.log('Server running on port 3001')
+})
+
+
+
+7. Resumen: ¿qué debes recordar?
+Concepto	¿Qué significa?
+Origin	Combinación de protocolo, host y puerto.
+Same-Origin Policy	Política de seguridad del navegador que restringe el acceso entre orígenes.
+CORS	Mecanismo que permite autorizar accesos entre diferentes orígenes.
+Access-Control-Allow-Origin	Cabecera que indica los orígenes autorizados.
+cors()	Middleware de Express que facilita configurar CORS.
+
+Quédate con esta idea:
+- Same-Origin Policy: el navegador protege el acceso a recursos de otros orígenes.
+- CORS: permite que el servidor autorice determinados accesos entre orígenes.
+- cors(): es la herramienta que utilizamos en Express para configurar esa autorización.
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+p3b
+Deploying app to internet
+
+Next, let's connect the frontend we made in part 2 to the Express backend we built in part 3a.
+
+In part 2, the frontend fetched notes from json-server at http://localhost:3001/notes. The Express backend we built in this part has a slightly different URL structure — notes are now at http://localhost:3001/api/notes. Let's change the attribute baseUrl in the frontend notes app at src/services/notes.js like so:
+
+import axios from 'axios'
+const baseUrl = 'http://localhost:3001/api/notes'
+const getAll = () => {
+  const request = axios.get(baseUrl)
+  return request.then(response => response.data)
+}
+
+// ...
+
+export default { getAll, create, update }
+copy
+
+Now frontend's GET request to http://localhost:3001/api/notes does not work for some reason:
+Get request showing error in dev tools
+
+What's going on here? We can access the backend from a browser and from postman without any problems.
+*/
 /**/
 /**/
 
-/**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Exercises 3.7.-3.8.
+*/
 /**/
 
-/**/
-/**/
 /**/
 
 /*
