@@ -1,4 +1,207 @@
 /*
+3.7: Phonebook backend step 7
+
+Add the morgan middleware to your application for logging. Configure it to log messages to your console based on the tiny configuration.
+
+The documentation for Morgan is not the best, and you may have to spend some time figuring out how to configure it correctly. However, most documentation in the world falls under the same category, so it's good to learn to decipher and interpret cryptic documentation in any case.
+
+Morgan is installed just like all other libraries with the npm install command. Taking morgan into use happens the same way as configuring any other middleware by using the app.use command.
+*/
+/**/
+const express = require('express')
+const app = express()
+const morgan = require('morgan')
+
+app.use(express.json())
+app.use(morgan('dev'))
+
+let persons = [
+    { 
+      "id": "1",
+      "name": "Arto Hellas", 
+      "number": "040-123456"
+    },
+    { 
+      id: "2", //Crazy but ok
+      name: "Ada Lovelace", 
+      number: "39-44-5323523"
+    },
+    { 
+      "id": "3",
+      "name": "Dan Abramov", 
+      "number": "12-43-234345"
+    },
+    { 
+      "id": "4",
+      "name": "Mary Poppendieck", 
+      "number": "39-23-6423122"
+    }
+]
+
+app.get('/api/persons',(request, response) => {
+    response.json(persons)
+})
+
+app.get('/api/persons/info',(request, response) => {
+  const date = new Date()
+  const info = `Phonebook has info for ${persons.length} people \n ${date}`
+  response.type('text/plain').send(info) //Texto plano para conservar el \n
+})
+
+app.get('/api/persons/:id',(request, response) => {
+  const id = request.params.id
+  const person = persons.find(person => person.id === id)
+  if(!person) return response.status(404).end()
+  response.json(person)
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+  const id = request.params.id
+  const deletedPerson = persons.find(person => person.id === id)
+  if(!deletedPerson) return response.status(404).end()
+  persons = persons.filter(person => person !== deletedPerson)
+  response.status(204).end()
+})
+
+const newId = () => Math.floor(Math.random()*1e15).toString()
+
+app.post('/api/persons',(request, response) => {
+
+  const body = request.body
+
+  if (
+    !body ||
+    typeof body.name !== 'string' ||
+    typeof body.number !== 'string' ||
+    !body.name.trim() ||
+    !body.number.trim()
+  ) {
+    return response.status(400).json({
+      error: 'name or number missing or invalid'
+    })
+  }
+
+  const nameExists = persons.find(
+    person => person.name.trim().toLowerCase() === body.name.trim().toLowerCase()
+  )
+
+  if(nameExists) return response.status(409).json({
+    error: `Error: The name: ${body.name.trim().toLowerCase()} already exists`
+  })
+
+  const person = {
+    id: newId(),
+    name: body.name.trim(),
+    number: body.number.trim()
+  }
+
+  persons = persons.concat(person)
+
+  response.status(201).json(person)
+})
+
+app.put('/api/persons/:id',(request, response) => {
+
+  const id = request.params.id //Viene de la url del put
+  const body = request.body
+
+  if (
+    !body ||
+    typeof body.name !== 'string' ||
+    typeof body.number !== 'string' ||
+    !body.name.trim() ||
+    !body.number.trim()
+  ) {
+    return response.status(400).json({ //400 Bad Request: los datos enviados son incorrectos.
+      error: 'name or number missing or invalid'
+    })
+  }
+
+  const personExist = persons.find(person => person.id === id)
+  if(!personExist) return response.status(404).json({error:'user id not found'}) //404 Not Found: el recurso que intentas actualizar no existe.
+
+  const updatedPerson = {
+    ...personExist,
+    name: body.name.trim(),
+    number: body.number.trim()
+  }
+
+  persons = persons.map(person =>
+    person.id === id ?
+    updatedPerson :
+    person
+  )
+
+  response.json(updatedPerson)
+})
+
+app.patch('/api/persons/:id',(request, response) => {
+
+  const id = request.params.id //Viene de la url del put
+  const body = request.body
+
+  // Validate only the fields provided
+  if (
+    (body.name !== undefined &&
+      (typeof body.name !== 'string' || !body.name.trim())) ||
+    (body.number !== undefined &&
+      (typeof body.number !== 'string' || !body.number.trim()))
+  ) {
+    return response.status(400).json({
+      error: 'invalid name or number'
+    })
+  }
+
+  const personExist = persons.find(person => person.id === id)
+  if(!personExist) return response.status(404).json({error:'user id not found'}) //404 Not Found: el recurso que intentas actualizar no existe.
+
+  const updatedPerson = { //Claro ahi esta el iio, hay que ser si se envio eso o no y segun eso actualizar
+    ...personExist,
+    name: body.name ? body.name.trim() : personExist.name,
+    number: body.number ? body.number.trim() : personExist.number
+  }
+
+  persons = persons.map(person =>
+    person.id === id ?
+    updatedPerson :
+    person
+  )
+
+  response.json(updatedPerson)
+})
+
+const PORT = 3001
+app.listen(PORT,() => {
+    console.log(`Server running on port ${PORT}`)
+})
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 3.6: Phonebook backend step 6
 
 Implement error handling for creating new entries. The request is not allowed to succeed, if:
@@ -10,7 +213,7 @@ Respond to requests like these with the appropriate status code, and also send b
 
 { error: 'name must be unique' }
 */
-/**/
+/*
 const express = require('express')
 const app = express()
 app.use(express.json())
