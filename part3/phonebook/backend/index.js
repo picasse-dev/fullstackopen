@@ -1,4 +1,224 @@
 /*
+3.8*: Phonebook backend step 8
+
+Configure morgan so that it also shows the data sent in HTTP POST requests:
+terminal showing post data being sent
+
+Note that logging data even in the console can be dangerous since it can contain sensitive data and may violate local privacy law (e.g. GDPR in EU) or business-standard. In this exercise, you don't have to worry about privacy issues, but in practice, try not to log any sensitive data.
+
+This exercise can be quite challenging, even though the solution does not require a lot of code.
+
+This exercise can be completed in a few different ways. One of the possible solutions utilizes these two techniques:
+
+    creating new tokens
+    JSON.stringify
+
+*/
+/**/
+const express = require('express')
+const morgan = require('morgan')
+
+const app = express()
+app.use(express.json())
+
+morgan.token('body', (req) => {
+  return req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH'
+    ? JSON.stringify(req.body)
+    : ''
+})
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
+
+let persons = [
+    { 
+      "id": "1",
+      "name": "Arto Hellas", 
+      "number": "040-123456"
+    },
+    { 
+      id: "2", //Crazy but ok
+      name: "Ada Lovelace", 
+      number: "39-44-5323523"
+    },
+    { 
+      "id": "3",
+      "name": "Dan Abramov", 
+      "number": "12-43-234345"
+    },
+    { 
+      "id": "4",
+      "name": "Mary Poppendieck", 
+      "number": "39-23-6423122"
+    }
+]
+
+app.get('/api/persons',(request, response) => {
+    response.json(persons)
+})
+
+app.get('/api/persons/info',(request, response) => {
+  const date = new Date()
+  const info = `Phonebook has info for ${persons.length} people \n ${date}`
+  response.type('text/plain').send(info) //Texto plano para conservar el \n
+})
+
+app.get('/api/persons/:id',(request, response) => {
+  const id = request.params.id
+  const person = persons.find(person => person.id === id)
+  if(!person) return response.status(404).end()
+  response.json(person)
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+  const id = request.params.id
+  const deletedPerson = persons.find(person => person.id === id)
+  if(!deletedPerson) return response.status(404).end()
+  persons = persons.filter(person => person !== deletedPerson)
+  response.status(204).end()
+})
+
+const newId = () => Math.floor(Math.random()*1e15).toString()
+
+app.post('/api/persons',(request, response) => {
+
+  const body = request.body
+
+  if (
+    !body ||
+    typeof body.name !== 'string' ||
+    typeof body.number !== 'string' ||
+    !body.name.trim() ||
+    !body.number.trim()
+  ) {
+    return response.status(400).json({
+      error: 'name or number missing or invalid'
+    })
+  }
+
+  const nameExists = persons.find(
+    person => person.name.trim().toLowerCase() === body.name.trim().toLowerCase()
+  )
+
+  if(nameExists) return response.status(409).json({
+    error: `Error: The name: ${body.name.trim().toLowerCase()} already exists`
+  })
+
+  const person = {
+    id: newId(),
+    name: body.name.trim(),
+    number: body.number.trim()
+  }
+
+  persons = persons.concat(person)
+
+  response.status(201).json(person)
+})
+
+app.put('/api/persons/:id',(request, response) => {
+
+  const id = request.params.id //Viene de la url del put
+  const body = request.body
+
+  if (
+    !body ||
+    typeof body.name !== 'string' ||
+    typeof body.number !== 'string' ||
+    !body.name.trim() ||
+    !body.number.trim()
+  ) {
+    return response.status(400).json({ //400 Bad Request: los datos enviados son incorrectos.
+      error: 'name or number missing or invalid'
+    })
+  }
+
+  const personExist = persons.find(person => person.id === id)
+  if(!personExist) return response.status(404).json({error:'user id not found'}) //404 Not Found: el recurso que intentas actualizar no existe.
+
+  const updatedPerson = {
+    ...personExist,
+    name: body.name.trim(),
+    number: body.number.trim()
+  }
+
+  persons = persons.map(person =>
+    person.id === id ?
+    updatedPerson :
+    person
+  )
+
+  response.json(updatedPerson)
+})
+
+app.patch('/api/persons/:id',(request, response) => {
+
+  const id = request.params.id //Viene de la url del put
+  const body = request.body
+
+  // Validate only the fields provided
+  if (
+    (body.name !== undefined &&
+      (typeof body.name !== 'string' || !body.name.trim())) ||
+    (body.number !== undefined &&
+      (typeof body.number !== 'string' || !body.number.trim()))
+  ) {
+    return response.status(400).json({
+      error: 'invalid name or number'
+    })
+  }
+
+  const personExist = persons.find(person => person.id === id)
+  if(!personExist) return response.status(404).json({error:'user id not found'}) //404 Not Found: el recurso que intentas actualizar no existe.
+
+  const updatedPerson = { //Claro ahi esta el iio, hay que ser si se envio eso o no y segun eso actualizar
+    ...personExist,
+    name: body.name ? body.name.trim() : personExist.name,
+    number: body.number ? body.number.trim() : personExist.number
+  }
+
+  persons = persons.map(person =>
+    person.id === id ?
+    updatedPerson :
+    person
+  )
+
+  response.json(updatedPerson)
+})
+
+const PORT = 3001
+app.listen(PORT,() => {
+    console.log(`Server running on port ${PORT}`)
+})
+/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 3.7: Phonebook backend step 7
 
 Add the morgan middleware to your application for logging. Configure it to log messages to your console based on the tiny configuration.
@@ -7,7 +227,7 @@ The documentation for Morgan is not the best, and you may have to spend some tim
 
 Morgan is installed just like all other libraries with the npm install command. Taking morgan into use happens the same way as configuring any other middleware by using the app.use command.
 */
-/**/
+/*
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
