@@ -279,6 +279,9 @@ diagram of react app and browser
 The react app running in the browser now fetches the data from node/express-server that runs in localhost:3001.
 */
 /*
+////SEE PHONEBOOK_CORS FOLDER
+/**/
+/*
 ////CORS F*CKKK
 1. ¿Qué pasa cuando visitas una página web?
 Imagina que abres esta dirección en tu navegador:
@@ -676,7 +679,7 @@ copy
 
 You can find the code for our current application in its entirety in the part3-2 branch of this GitHub repository.
 */
-/**/
+/*
 //Middleware: Software relacionado al manejo de request y response, en este caso el mas basico e inimaginable, mostrarlos por consola (siempre reciben 3 parametros)
 const express = require('express')//common.js modules
 const app = express()
