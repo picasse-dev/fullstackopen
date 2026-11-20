@@ -6,7 +6,7 @@
 //   plugins: [react()],
 // })
 
-//RENDER 5
+//RENDER 5, añadir:
 
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'

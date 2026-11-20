@@ -24,6 +24,16 @@
       "content": "b",
       "important": false,
       "id": "pzQqeyB3rw8"
+    },
+    {
+      "content": "hola",
+      "important": false,
+      "id": "7r0oqH0BBEQ"
+    },
+    {
+      "content": "hola",
+      "important": true,
+      "id": "7p_E5tdkLrA"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

@@ -15,16 +15,18 @@ This exercise can be completed in a few different ways. One of the possible solu
 
 */
 /**/
-const path = require('path') // 2 RENDER
+//Hay 5 Cambios que hay que hacer al codigo para configurar el proyecto para desplegar en RENDER
+
+const path = require('path') //  1 RENDER
 
 const express = require('express')
 const morgan = require('morgan')
-const cors = require('cors')//1. npm install cors, 2. Esto, sí.
+const cors = require('cors')
 
 
 const app = express()
 
-app.use(cors())// 3. Esto. 4. en el Archivo del front en ../services/persons.js cambiamos la URL-> const baseUrl = 'http://localhost:3001/api/persons'//4. Cambiamos esto tambien
+app.use(cors())
 
 app.use(express.json())
 
@@ -127,7 +129,7 @@ app.post('/api/persons',(request, response) => {
 
 app.put('/api/persons/:id',(request, response) => {
 
-  const id = request.params.id //Viene de la url del put
+  const id = request.params.id 
   const body = request.body
 
   if (
@@ -196,13 +198,15 @@ app.patch('/api/persons/:id',(request, response) => {
 })
 
 //const PORT = 3001  //normal
-const PORT = process.env.PORT || 3001 //RENDER 1
-// Servir el frontend compilado de React  //RENDER 3
-app.use(express.static(path.join(__dirname, '../dist')))
+const PORT = process.env.PORT || 3001 //RENDER 2
+
+app.use(express.static(path.join(__dirname, '../dist'))) // RENDER 3. Servir el frontend compilado de React  //RENDER 3
 
 app.listen(PORT,() => {
     console.log(`Server running on port ${PORT}`)
 })
+//RENDER 4. en el Archivo del front en ../services/persons.js cambiamos la URL-> const baseUrl = 'http://localhost:3001/api/persons' por const baseUrl = '/api/persons'
+//RENDER 5. vite.config.js
 /**/
 
 

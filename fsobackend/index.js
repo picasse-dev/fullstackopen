@@ -22,21 +22,433 @@
 /**/
 /**/
 
-/**/
-/**/
+/*
+Streamlining deploying of the frontend
+
+To create a new production build of the frontend without extra manual work, let's add some npm-scripts to the package.json of the backend repository.
+Fly.io script
+
+The scripts look like this:
+
+{
+  "scripts": {
+    // ...
+    "build:ui": "rm -rf dist && cd ../notes-frontend/ && npm run build && cp -r dist ../notes-backend",
+    "deploy": "fly deploy",
+    "deploy:full": "npm run build:ui && npm run deploy",    
+    "logs:prod": "fly logs"
+  }
+}
+copy
+
+The script npm run build:ui builds the frontend and copies the production version under the backend repository. The script npm run deploy releases the current backend to Fly.io.
+
+npm run deploy:full combines these two scripts, i.e., npm run build:ui and npm run deploy.
+
+There is also a script npm run logs:prod to show the Fly.io logs.
+
+Note that the directory paths in the script build:ui depend on the location of the frontend and backend directories in the file system.
+Note for Windows users
+
+Note that the standard shell commands in build:ui do not natively work in Windows. Powershell in Windows works differently, in which case the script could be written as
+
+"build:ui": "@powershell Remove-Item -Recurse -Force dist && cd ../frontend && npm run build && @powershell Copy-Item dist -Recurse ../backend",
+copy
+
+If the script does not work on Windows, confirm that you are using Powershell and not Command Prompt. If you have installed Git Bash or another Linux-like terminal, you may be able to run Linux-like commands on Windows as well.
+Render
+
+Note: When you attempt to deploy your backend to Render, make sure you have a separate repository for the backend and deploy that github repo through Render, attempting to deploy through your Fullstackopen repository will often throw "ERR path ....package.json".
+
+In case of Render, the scripts look like the following
+
+{
+  "scripts": {
+    //...
+    "build:ui": "rm -rf dist && cd ../frontend && npm run build && cp -r dist ../backend",
+    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push"
+  }
+}
+copy
+
+The script npm run build:ui builds the frontend and copies the production version under the backend repository. npm run deploy:full contains also the necessary git commands to update the backend repository.
+
+Note that the directory paths in the script build:ui depend on the location of the frontend and backend directories in the file system.
+
+    NB On Windows, npm scripts are executed in cmd.exe as the default shell which does not support bash commands. For the above bash commands to work, you can change the default shell to Bash (in the default Git for Windows installation) as follows:
+
+npm config set script-shell "C:\\Program Files\\git\\bin\\bash.exe"
+copy
+
+Another option is the use of shx.
+*/
 /**/
 
 /**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+The whole app to the internet
+
+After ensuring that the production version of the application works locally, we are ready to move the whole application to the selected host service.
+
+In the case of Fly.io the new deployment is done with the command
+
+fly deploy
+copy
+
+NOTE: The .dockerignore file in your project directory lists files not uploaded during deployment. The dist directory may be included by default. If that's the case, remove its reference from the .dockerignore file, ensuring your app is properly deployed.
+
+In the case of Render, commit the changes, and push the code to GitHub again. Make sure the directory dist is not ignored by git on the backend. A push to GitHub might be enough. If the automatic deployment does not work, select the "manual deploy" from the Render dashboard.
+
+The application works perfectly, except we haven't added the functionality for changing the importance of a note to the backend yet.
+screenshot of notes application
+
+NOTE: changing the importance DOES NOT work yet since the backend has no implementation for it yet.
+
+Our application saves the notes to a variable. If the application crashes or is restarted, all of the data will disappear.
+
+The application needs a database. Before we introduce one, let's go through a few things.
+
+The setup now looks like as follows:
+diagram of react app on fly.io
+
+The node/express-backend now resides in the Fly.io/Render server. When the root address is accessed, the browser loads and executes the React app that fetches the json-data from the Fly.io/Render server.
+*/
 /**/
 
 /**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Serving static files from the backend
+
+One option for deploying the frontend is to copy the production build (the dist directory) to the root of the backend directory and configure the backend to show the frontend's main page (the file dist/index.html) as its main page.
+
+We begin by copying the production build of the frontend to the root of the backend. With a Mac or Linux computer, the copying can be done from the frontend directory with the command
+
+cp -r dist ../backend
+copy
+
+If you are using a Windows computer, you may use either copy or xcopy command instead. Otherwise, simply copy and paste.
+
+The backend directory should now look as follows:
+bash screenshot of ls showing dist directory
+
+To make Express show static content, the page index.html and the JavaScript, etc., it fetches, we need a built-in middleware from Express called static.
+
+When we add the following amidst the declarations of middlewares
+
+app.use(express.static('dist'))
+copy
+
+whenever Express gets an HTTP GET request it will first check if the dist directory contains a file corresponding to the request's address. If a correct file is found, Express will return it.
+
+Now HTTP GET requests to the address www.serversaddress.com/index.html or www.serversaddress.com will show the React frontend. GET requests to the address www.serversaddress.com/api/notes will be handled by the backend code.
+
+Because of our situation, both the frontend and the backend are at the same address, we can declare baseUrl as a relative URL. This means we can leave out the part declaring the server.
+
+import axios from 'axios'
+const baseUrl = '/api/notes'
+const getAll = () => {
+  const request = axios.get(baseUrl)
+  return request.then(response => response.data)
+}
+
+// ...
+copy
+
+After the change, we have to create a new production build of the frontend and copy it to the root of the backend directory.
+
+The application can now be used from the backend address http://localhost:3001:
+Notes application in localhost:3001
+
+Our application now works exactly like the single-page app example application we studied in part 0.
+
+When we use a browser to go to the address http://localhost:3001, the server returns the index.html file from the dist directory. The contents of the file are as follows:
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React</title>
+    <script type="module" crossorigin src="/assets/index-5f6faa37.js"></script>
+    <link rel="stylesheet" href="/assets/index-198af077.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    
+  </body>
+</html>
+copy
+
+The file contains instructions to fetch a CSS stylesheet defining the styles of the application, and one script tag that instructs the browser to fetch the JavaScript code of the application - the actual React application.
+
+The React code fetches notes from the server address http://localhost:3001/api/notes and renders them to the screen. The communication between the server and the browser can be seen in the Network tab of the developer console:
+Network tab of notes application on backend
+
+The setup that is ready for a product deployment looks as follows:
+diagram of deployment ready react app
+
+Unlike when running the app in a development environment, everything is now in the same node/express-backend that runs in localhost:3001. When the browser goes to the page, the file index.html is rendered. That causes the browser to fetch the production version of the React app. Once it starts to run, it fetches the json-data from the address localhost:3001/api/notes.
+*/
+/*
+//Hay q arreglar que esta mierda cuando el front manda el put, aca obviamente aun no se implementó, por lo tanto el servidor manda un error el cual el front va a catchear y va a borrar de la lista local(la del state) el objeto que se solicito actualizar, mientras que en el servidor sigue el objeto, man basicamante hay un conflicto de manejo de codigos de error y solicitudes del front/metodos que las reciben en el backend
+const express = require('express')
+const app = express()
+
+const requestLogger = (request, response, next) => { 
+  console.log('Method:', request.method)
+  console.log('Path:  ', request.path)
+  console.log('Body:  ', request.body)
+  console.log('---')
+  next()
+}
+//MIDDLEWARES DECLARATIONS
+app.use(express.json())
+app.use(requestLogger)
+app.use(express.static('dist'))//static files from backend, dist es la carpeta que genero vite al hacer el comando npm run build en el proyecto notes de fso (esta en la parte de INLINE STYLES), tambien hubo que cambiar la ruta del servidor en el front ../services/notes.js por:
+//const baseUrl = '/api/notes' //FOR P3B/ Serving static files from the backend (ES UNA RUTA RELATIVA)
+//como era antes:
+//const baseUrl = 'http://localhost:3001/notes' //NORMAL 
+
+
+let notes = [
+  {
+    id: "1",
+    content: "HTML is easy",
+    important: true
+  },
+  {
+    id: "2",
+    content: "Browser can execute only JavaScript",
+    important: false
+  },
+  {
+    id: "3",
+    content: "GET and POST are the most important methods of HTTP protocol",
+    important: true
+  },
+  {
+    id: "4",
+    content: "Serving static files from the backend",
+    important: true
+  }
+]
+
+app.get('/api/notes', (request, response) => {
+  response.json(notes)
+})
+
+app.get('/api/notes/:id', (request, response) => {
+  const id = request.params.id 
+  const note = notes.find(note => note.id === id)
+  
+  if(note){
+    response.json(note)
+  }else{
+    response.status(404).end()
+  }
+})
+ 
+app.delete('/api/notes/:id', (request, response) => { 
+  const id = request.params.id 
+  notes = notes.filter(note => note.id !== id)
+  response.status(204).end()
+})
+
+const generateId = () => {
+  const maxId = notes.length > 0
+  ? Math.max(...notes.map(note => Number(note.id))) 
+  : 0
+  return String(maxId + 1)
+}
+
+app.post('/api/notes', (request, response) => {
+  const body = request.body 
+  if(!body.content){
+    return response.status(400).json({
+      error: 'conent missing'
+    })
+  }
+  
+  const note = {
+    content: body.content,
+    important: body.important || false,
+    id: generateId(),
+  }
+  
+  notes = notes.concat(note)
+  
+  response.json(note) 
+})
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknowwwwn endpoint' })
+}
+app.use(unknownEndpoint)
+
+const PORT = 3001
+app.listen(PORT, () => {
+  console.log(`Server running on portt ${PORT}`)
+})
 /**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Frontend production build
+
+So far we have been running React code in development mode. In development mode the application is configured to give clear error messages, immediately render code changes to the browser, and so on.
+
+When the application is deployed, we must create a production build or a version of the application that is optimized for production.
+
+A production build for applications created with Vite can be created with the command npm run build.
+
+Let's run this command from the root of the notes frontend project that we developed in Part 2.
+
+This creates a directory called dist which contains the only HTML file of our application (index.html) and the directory assets. Minified version of our application's JavaScript code will be generated in the dist directory. Even though the application code is in multiple files, all of the JavaScript will be minified into one file. All of the code from all of the application's dependencies will also be minified into this single file.
+
+The minified code is not very readable. The beginning of the code looks like this:
+
+!function(e){function r(r){for(var n,f,i=r[0],l=r[1],a=r[2],c=0,s=[];c<i.length;c++)f=i[c],o[f]&&s.push(o[f][0]),o[f]=0;for(n in l)Object.prototype.hasOwnProperty.call(l,n)&&(e[n]=l[n]);for(p&&p(r);s.length;)s.shift()();return u.push.apply(u,a||[]),t()}function t(){for(var e,r=0;r<u.length;r++){for(var t=u[r],n=!0,i=1;i<t.length;i++){var l=t[i];0!==o[l]&&(n=!1)}n&&(u.splice(r--,1),e=f(f.s=t[0]))}return e}var n={},o={2:0},u=[];function f(r){if(n[r])return n[r].exports;var t=n[r]={i:r,l:!1,exports:{}};return e[r].call(t.exports,t,t.exports,f),t.l=!0,t.exports}f.m=e,f.c=n,f.d=function(e,r,t){f.o(e,r)||Object.defineProperty(e,r,{enumerable:!0,get:t})},f.r=function(e){"undefined"!==typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"})
+*/
 /**/
 
 /**/
-/**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Application to the Internet
@@ -153,8 +565,9 @@ Whenever you make changes to the application, you can take the new version to pr
 fly deploy
 copy
 
+==========================================
 Render
-
+==========================================
 Note that you may need to give your credit card number to Render!
 
 The following assumes that the sign in has been made with a GitHub account.
@@ -586,6 +999,7 @@ Get request showing error in dev tools
 What's going on here? We can access the backend from a browser and from postman without any problems.
 */
 /**/
+
 /**/
 
 
@@ -631,6 +1045,38 @@ Exercises 3.7.-3.8.
 /**/
 
 /**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Middleware
@@ -2095,5 +2541,6 @@ node index.js
 but if...
 in package.json/scripts add this line
 "start": "node index.js",
-now from the console you use can npm start
+now from the console you use can 
+npm start
 /**/

@@ -1,5 +1,6 @@
 import axios from 'axios'
-const baseUrl = 'http://localhost:3002/notes'
+const baseUrl = 'http://localhost:3001/notes' //NORMAL
+//const baseUrl = '/api/notes' //FOR P3B/ Serving static files from the backend
 
 const getAll = () => {
   const request = axios.get(baseUrl)

@@ -1,29 +1,50 @@
-/**/
-/**/
-/**/
-/**/
-/**/
-/**/
+/*
+MY FULLSTACKOPEN NOTEBOOK
+by: picasse-dev
+
+
+I created this react project called fso, where every explanation from part 0 to part 2, is included here, and can be executed by uncommenting the corresponding part to the explanation, you cant have more than one part uncommented at the same time.
+
+The exercises are not included here, because these are in the forders of PART1, PART2.
+Im also did this exercises in the same fooly way by commenting a section done, and putting the next exercise update on the top, so you can see the historic versions of the exercises on the archive. 
+
+The part 3 is on a node project in the folder fsobackend, and like here you only can uncomment one part at a time.
+
+Im currently trying to add the images using references wich are opened by ctrl+click
+Reference: [React App](file:///home/seb/Desktop/fullstackopen/fso/docs/images/a.png)
+*/
+/*
+
+I put the code for the sections here
+You comment/uncomment this comment-block section for executing the code by adding or removing:  */
+//at the beggining of the comment block section
+//so...
+//unCommented   should look like this /**/
+//and commented should look like this /*
+//As you can see this block is commented
 
 /**/
-/**/
-/**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Exercises 2.18.-2.20.
 */
 /**/
 /**/
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -251,7 +272,7 @@ The way presented here for making API requests might seem a bit awkward. This pa
   }
 However, there are situations where that technique would not work. For example, you might encounter one such a situation in the exercise 2.20 where the use of useEffect could provide a solution. Note that this depends quite much on the approach you selected, e.g. the model solution does not use this trick.
 */
-/**/
+/*
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 let a = 0;
@@ -460,7 +481,7 @@ The structural units that make up the application's functional entities are Reac
 
 The code of the final version of our application can be found in the part2-8 branch on GitHub.
 */
-/*
+/** */
 import { useState, useEffect } from 'react'
 import Note2 from './components/Note2'//USING NOTE2.JSX
 import noteService from './services/notes'
@@ -2111,6 +2132,8 @@ The "Async and performance" book from the You do not know JS book series explain
 Promises are central to modern JavaScript development and it is highly recommended to invest a reasonable amount of time into understanding them.
 */
 ////6647
+////566885-604747-448206-073436  del repositorio de github
+////240592-204589-571285-605242  de Render.io
 /*
 import { useState, useEffect } from 'react'
 import Note2 from './components/Note2'//USING NOTE2.JSX
@@ -3778,7 +3801,7 @@ There is a fine difference in the parameters. axios is installed as a runtime de
 //3) npm run server
 // http://localhost:3001/notes
 
-// or the one use sintex not installing:
+// or the one use sintax not installing:
 // 1, 2 y 3) en un solo comando seria
 // npx json-server --port 3001 db.json (Pero esta no la vamos a usar)
 
