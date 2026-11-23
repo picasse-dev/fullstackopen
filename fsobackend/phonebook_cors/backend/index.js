@@ -21,9 +21,7 @@ const cors = require('cors')//1. npm install cors, 2. Esto, sí.
 
 
 const app = express()
-
 app.use(cors())// 3. Esto. 4. en el Archivo del front en ../services/persons.js cambiamos la URL-> const baseUrl = 'http://localhost:3001/api/persons'//4. Cambiamos esto tambien
-
 app.use(express.json())
 
 morgan.token('body', (req) => {

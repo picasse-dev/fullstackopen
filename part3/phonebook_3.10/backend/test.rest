@@ -1,0 +1,49 @@
+### 3.1
+GET https://phonebook-3-10-x8q3.onrender.com/api/persons
+content-type: application/json
+
+### 3.2
+GET https://phonebook-3-10-x8q3.onrender.com/api/persons/info
+content-type: application/json
+
+### 3.3
+GET https://phonebook-3-10-x8q3.onrender.com/api/persons/1
+content-type: application/json
+
+### 3.4
+DELETE https://phonebook-3-10-x8q3.onrender.com/api/persons/2
+content-type: aplication/json
+
+### 3.5
+POST https://phonebook-3-10-x8q3.onrender.com/api/persons
+content-type: application/json
+
+{
+    "name":"chote",
+    "number":"123-456-7890"
+}
+
+### extra put
+PUT https://phonebook-3-10-x8q3.onrender.com/api/persons/1
+Content-Type: application/json
+
+{ 
+    "name": "Artote Hellote", 
+    "number": "1500"
+}
+
+### extra patch
+PATCH https://phonebook-3-10-x8q3.onrender.com/api/persons/1
+Content-Type: application/json
+
+{ 
+    "name": "Artoteee Helloteeeeeee Yeahhh"
+}
+
+### extra patch 2
+PATCH https://phonebook-3-10-x8q3.onrender.com/api/persons/1
+Content-Type: application/json
+
+{ 
+    "number": "999999999999"
+}
