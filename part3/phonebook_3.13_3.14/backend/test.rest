@@ -1,0 +1,187 @@
+
+#@baseUrl = https://phonebook-3-11.onrender.com
+@baseUrl = http://localhost:3001
+@personsUrl = {{baseUrl}}/api/persons
+@personId = 6b08a0a5137c54700e4671ab
+@invalidId = 999999999
+
+### ==========================================
+### 1. GET - READ
+### ==========================================
+
+### Get all persons
+GET {{personsUrl}}
+Accept: application/json
+
+### Get phonebook information
+GET {{personsUrl}}/info
+Accept: text/plain
+
+### Get person by ID
+GET {{personsUrl}}/{{personId}}
+Accept: application/json
+
+### Get person - Not found (404)
+GET {{personsUrl}}/{{invalidId}}
+Accept: application/json
+
+
+### ==========================================
+### 2. POST - CREATE
+### ==========================================
+
+### Create a new person
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Chote",
+  "number": "123-456-7890"
+}
+
+### Create another person
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Ada Lovelace",
+  "number": "555-1234"
+}
+
+### Create person - Missing fields (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Incomplete Person"
+}
+
+### Create person - Empty fields (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "   ",
+  "number": ""
+}
+
+### Create person - Invalid data types (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": 123,
+  "number": true
+}
+
+### Create person - Duplicate name (409)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Arto Hellas",
+  "number": "999-9999"
+}
+
+
+### ==========================================
+### 3. PUT - FULL UPDATE
+### ==========================================
+
+### Replace person data
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Artote Hellote",
+  "number": "1500"
+}
+
+### Update person - Missing fields (400)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Incomplete Update"
+}
+
+### Update person - Not found (404)
+PUT {{personsUrl}}/{{invalidId}}
+Content-Type: application/json
+
+{
+  "name": "Unknown Person",
+  "number": "123456"
+}
+
+
+### ==========================================
+### 4. PATCH - PARTIAL UPDATE
+### ==========================================
+
+### Update only the name
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Artoteee Helloteeeeeee"
+}
+
+### Update only the number
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "number": "999999999999"
+}
+
+### Update both fields
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Sebastian",
+  "number": "111-222-333"
+}
+
+### PATCH - Empty body (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{}
+
+### PATCH - Invalid field type (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": 123
+}
+
+### PATCH - Not found (404)
+PATCH {{personsUrl}}/{{invalidId}}
+Content-Type: application/json
+
+{
+  "name": "Unknown Person"
+}
+
+
+### ==========================================
+### 5. DELETE - REMOVE
+### ==========================================
+
+### Delete person
+DELETE {{personsUrl}}/{{personId}}
+
+### Delete person - Already deleted or not found (404)
+DELETE {{personsUrl}}/{{personId}}
+
+
+### ==========================================
+### 6. UNKNOWN ENDPOINT
+### ==========================================
+
+### Unknown endpoint (404)
+GET {{baseUrl}}/api/unknown
+Accept: application/json

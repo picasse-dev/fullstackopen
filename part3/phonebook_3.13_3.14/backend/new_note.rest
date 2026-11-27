@@ -1,0 +1,506 @@
+
+@baseUrl = http://localhost:3001
+@personsUrl = {{baseUrl}}/api/persons
+
+@personId = 6b0a0409c07fdf803b4dc93c
+@invalidId = 999999
+@nonExistentId = 99999999999999999999999999
+
+### ==================================================
+### 1. GET - READ
+### ==================================================
+
+### 1.1 Get all persons
+GET {{personsUrl}}
+Accept: application/json
+
+### 1.2 Get persons information (total count)
+GET {{personsUrl}}/info
+Accept: application/json
+
+### 1.3 Get person by ID
+GET {{personsUrl}}/{{personId}}
+Accept: application/json
+
+### 1.4 Get person - Invalid ID format (400)
+GET {{personsUrl}}/{{invalidId}}
+Accept: application/json
+
+### 1.5 Get person - Valid MongoDB ID but not found (404)
+GET {{personsUrl}}/{{nonExistentId}}
+Accept: application/json
+
+
+### ==================================================
+### 2. POST - CREATE
+### ==================================================
+
+### 2.1 Create person with valid data
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Sebastian Caceres",
+  "number": "123-456-7890"
+}
+
+### 2.2 Create person with different valid data
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "number": "987-654-3210"
+}
+
+### 2.3 Create person with numbers containing spaces
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "number": "555 123 4567"
+}
+
+### 2.4 Create person with extra whitespace
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "  Michael Scott  ",
+  "number": " 111-222-3333 "
+}
+
+### 2.5 Create person - Missing name (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "number": "123-456-7890"
+}
+
+### 2.6 Create person - Missing number (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Missing Number"
+}
+
+### 2.7 Create person - Missing all properties (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{}
+
+### 2.8 Create person - Empty name (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "number": "123-456-7890"
+}
+
+### 2.9 Create person - Empty number (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Empty Number",
+  "number": ""
+}
+
+### 2.10 Create person - Whitespace-only name (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "   ",
+  "number": "123-456-7890"
+}
+
+### 2.11 Create person - Whitespace-only number (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Whitespace Number",
+  "number": "   "
+}
+
+### 2.12 Create person - Invalid name type (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": 123,
+  "number": "123-456-7890"
+}
+
+### 2.13 Create person - Invalid number type (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Number Type",
+  "number": 1234567890
+}
+
+### 2.14 Create person - Null name (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": null,
+  "number": "123-456-7890"
+}
+
+### 2.15 Create person - Null number (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Null Number",
+  "number": null
+}
+
+### 2.16 Create person - Duplicate name (409)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Sebastian Caceres",
+  "number": "111-111-1111"
+}
+
+### 2.17 Create person - Duplicate number (409)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Another Person",
+  "number": "123-456-7890"
+}
+
+### 2.18 Create person - Unknown fields
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Unknown Fields Test",
+  "number": "222-333-4444",
+  "age": 25,
+  "email": "test@example.com"
+}
+
+
+### ==================================================
+### 3. PUT - FULL UPDATE
+### ==================================================
+
+### 3.1 Replace person completely
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Sebastian Updated",
+  "number": "111-222-3333"
+}
+
+### 3.2 PUT - Missing name (400)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "number": "111-222-3333"
+}
+
+### 3.3 PUT - Missing number (400)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Missing Number"
+}
+
+### 3.4 PUT - Empty body (400)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{}
+
+### 3.5 PUT - Empty name (400)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "number": "111-222-3333"
+}
+
+### 3.6 PUT - Empty number (400)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Empty Number",
+  "number": ""
+}
+
+### 3.7 PUT - Invalid name type (400)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": 123,
+  "number": "111-222-3333"
+}
+
+### 3.8 PUT - Invalid number type (400)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Number",
+  "number": 123456789
+}
+
+### 3.9 PUT - Person not found (404)
+PUT {{personsUrl}}/{{nonExistentId}}
+Content-Type: application/json
+
+{
+  "name": "Nonexistent Person",
+  "number": "111-222-3333"
+}
+
+### 3.10 PUT - Invalid ID format (400)
+PUT {{personsUrl}}/{{invalidId}}
+Content-Type: application/json
+
+{
+  "name": "Invalid ID",
+  "number": "111-222-3333"
+}
+
+### 3.11 PUT - Duplicate name (409)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "number": "555-666-7777"
+}
+
+### 3.12 PUT - Duplicate number (409)
+PUT {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Unique Name",
+  "number": "987-654-3210"
+}
+
+
+### ==================================================
+### 4. PATCH - PARTIAL UPDATE
+### ==================================================
+
+### 4.1 Update only name
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Sebastian New Name"
+}
+
+### 4.2 Update only number
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "number": "999-888-7777"
+}
+
+### 4.3 Update both properties
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "Sebastian Final",
+  "number": "444-555-6666"
+}
+
+### 4.4 PATCH - Empty body (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{}
+
+### 4.5 PATCH - Empty name (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": ""
+}
+
+### 4.6 PATCH - Empty number (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "number": ""
+}
+
+### 4.7 PATCH - Whitespace-only name (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "   "
+}
+
+### 4.8 PATCH - Whitespace-only number (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "number": "   "
+}
+
+### 4.9 PATCH - Invalid name type (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": 123
+}
+
+### 4.10 PATCH - Invalid number type (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "number": 123456789
+}
+
+### 4.11 PATCH - Null name (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": null
+}
+
+### 4.12 PATCH - Null number (400)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "number": null
+}
+
+### 4.13 PATCH - Unknown fields
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "age": 30,
+  "email": "unknown@example.com"
+}
+
+### 4.14 PATCH - Duplicate name (409)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "name": "John Doe"
+}
+
+### 4.15 PATCH - Duplicate number (409)
+PATCH {{personsUrl}}/{{personId}}
+Content-Type: application/json
+
+{
+  "number": "987-654-3210"
+}
+
+### 4.16 PATCH - Invalid ID format (400)
+PATCH {{personsUrl}}/{{invalidId}}
+Content-Type: application/json
+
+{
+  "name": "Invalid ID Test"
+}
+
+### 4.17 PATCH - Person not found (404)
+PATCH {{personsUrl}}/{{nonExistentId}}
+Content-Type: application/json
+
+{
+  "name": "Nonexistent Person"
+}
+
+
+### ==================================================
+### 5. DELETE - REMOVE
+### ==================================================
+
+### 5.1 Delete person
+DELETE {{personsUrl}}/{{personId}}
+Accept: application/json
+
+### 5.2 Delete person - Already deleted (404)
+DELETE {{personsUrl}}/{{personId}}
+Accept: application/json
+
+### 5.3 Delete person - Invalid ID format (400)
+DELETE {{personsUrl}}/{{invalidId}}
+Accept: application/json
+
+### 5.4 Delete person - Valid ID but not found (404)
+DELETE {{personsUrl}}/{{nonExistentId}}
+Accept: application/json
+
+
+### ==================================================
+### 6. ERROR HANDLING
+### ==================================================
+
+### 6.1 Unknown API endpoint (404)
+GET {{baseUrl}}/api/unknown
+
+### 6.2 Unknown HTTP route (404)
+GET {{baseUrl}}/unknown
+
+### 6.3 Unsupported HTTP method (404)
+OPTIONS {{personsUrl}}/unknown
+
+### 6.4 Malformed JSON (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Broken JSON",
+  "number": "123-456-7890",
+}
+
+### 6.5 Malformed JSON - Missing closing brace (400)
+POST {{personsUrl}}
+Content-Type: application/json
+
+{
+  "name": "Broken JSON",
+  "number": "123-456-7890"
+
+### 6.6 Unsupported content type
+POST {{personsUrl}}
+Content-Type: text/plain
+
+This is not JSON
+
+### 6.7 GET with unsupported route structure
+GET {{personsUrl}}/invalid/extra/path
+Accept: application/json
